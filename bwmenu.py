@@ -3,8 +3,9 @@
 from logger import BwLogger
 from arguments import parse_arguments
 from settings import NAME, VERSION
-from session import Session
+from session import Session, SessionException
 from rofi import Rofi
+from completion import Completion, CompletionException
 
 
 def main():
@@ -16,8 +17,13 @@ def main():
         exit()
 
     logger.info("Application has been launched")
-    session = Session(args.timeout)
-    rofi = Rofi()
+    try:
+        session = Session(args.timeout)
+        rofi = Rofi()
+        completion = Completion()
+    except (CompletionException, SessionException):
+        logger.exception(f"Failed to initialise application")
+        exit(1)
 
     pwd = None
     if not session.has_key():

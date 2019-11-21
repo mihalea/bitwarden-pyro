@@ -22,7 +22,7 @@ class Session:
     def __test_keyctl(self):
         if which('keyctl') is None:
             self._logger.error("'keyctl' could not be found on the system")
-            exit(0)
+            raise NoExecutableException
 
     def has_key(self):
         return self.auto_lock != 0 and self.__get_keyid() is not None
@@ -43,9 +43,9 @@ class Session:
             self._logger.info("Deleting key from keyctl")
             lock_cmd = f"keyctl purge user {self.KEY_NAME}"
             sp.run(lock_cmd.split(), check=True)
-        except CalledProcessError:
+        except CalledProcessError as e:
             self._logger.exception("Failed to delete key from keyctl")
-            exit(1)
+            raise LockException from e
 
     def unlock(self, password):
         try:
@@ -68,6 +68,7 @@ class Session:
 
         except CalledProcessError:
             self._logger.warning("Failed to unlock bitwarden")
+            raise UnlockException
 
     def get_key(self):
         try:
@@ -95,12 +96,37 @@ class Session:
                     return self.key
                 else:
                     self._logger.error("Key was not found in keyctl")
-                    exit(1)
+                    raise KeyReadException
             else:
                 self._logger.critical(
                     "Program is in an unknown state. Exiting..."
                 )
-                exit(1)
-        except CalledProcessError:
-            self._logger.critical("Failed to retrieve key")
-            exit(1)
+                raise KeyReadException
+        except CalledProcessError as e:
+            self._logger.error("Failed to retrieve key")
+            raise KeyReadException from e
+
+
+class SessionException(Exception):
+    """Base exception for all errors raised by Session"""
+    pass
+
+
+class NoExecutableException(SessionException):
+    """Raised when the keyctl could not be found in system"""
+    pass
+
+
+class LockException(SessionException):
+    """Raised when an issue occurs when trying to lock the vault"""
+    pass
+
+
+class UnlockException(SessionException):
+    """Raised when an issue occurs when trying to unlock the vault"""
+    pass
+
+
+class KeyReadException(SessionException):
+    """Raised when reading the key from keyctl fails"""
+    pass
