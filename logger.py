@@ -31,14 +31,14 @@ class BwLogger(object, metaclass=SingletonType):
         # create formatter and add it to the handlers
         consoleFormatter = None
         fileFormatter = logging.Formatter(
-            '%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s'
+            '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] - %(message)s'
         )
 
         if verbose:
             consoleFormatter = fileFormatter
         else:
             consoleFormatter = logging.Formatter(
-                '%(asctime)s %(levelname)-5s - %(message)s'
+                '%(asctime)s %(levelname)-8s - %(message)s'
             )
 
         fh.setFormatter(fileFormatter)

@@ -61,9 +61,12 @@ class Completion:
         """
         session_type = os.getenv('XDG_SESSION_TYPE')
         self._logger.debug("Initialising executable for %s", tool_group)
+
+        # If session is a supported one
         if session_type is not None:
             self._logger.debug('Detected session type: %s', session_type)
             tools = self._default_tools.get(tool_group).get(session_type)
+            # If there are tools defined for the current tool_group
             if tools is not None:
                 return self.__find_executable(tools)
             else:
@@ -71,19 +74,20 @@ class Completion:
                     "Desktop session not supported: %s", session_type
                 )
                 raise UnsupportedDesktopException
+        # If session is not supported, try and make the best
+        # guess based on available executables
         else:
             self._logger.warning(
                 "Could not read desktop session type from environment, " +
                 "trying to guess based on detected executables"
             )
 
+            # List of available executables
             detected = [
                 (ds, tool)
                 for ds, tool in self._default_tools.get(tool_group).items()
                 if which(tool) is not None
             ]
-
-            detected_sessions = set([d[0] for d in detected])
 
             if len(detected) == 0:
                 self._logger.critical(
@@ -92,8 +96,18 @@ class Completion:
                 raise NoExecutableException(
                     f"Failed to find executable for {tool_group}"
                 )
-            elif len(detected_sessions) == 1:
+
+            # List of unique desktop sessions for which executables have
+            # been found
+            detected_sessions = set([d[0] for d in detected])
+
+            # Available executables are all for the same desktop session
+            if len(detected_sessions) == 1:
                 return self.__find_executable([d[1] for d in detected])
+
+            # If executables are from multiple desktop sessions, the best one
+            # can't be picked automatically, as we can't assume the currently
+            # running desktop session
             elif len(detected_sessions) > 1:
                 self._logger.warning(
                     "Found too many supported executable to be able to make " +
