@@ -9,25 +9,24 @@ import re
 
 class Session:
     KEY_NAME = "bw_session"
+    DEFAULT_TIMEOUT = 900
     _logger = None
 
     def __init__(self, auto_lock):
         # Interval in seconds for locking the vault
-        self.auto_lock = int(auto_lock) if auto_lock is not None else 900
+        self.auto_lock = int(auto_lock) \
+            if auto_lock is not None else self.DEFAULT_TIMEOUT
         self.key = None
 
         self._logger = BwLogger().get_logger()
         self.__has_executable()
 
     def __has_executable(self):
-        """Check whether the 'keyctl' can be found on the system
+        """Check whether the 'keyctl' can be found on the system"""
 
-        Raises:
-            NoExecutableException: Raised when keyctl is not found
-        """
         if which('keyctl') is None:
             self._logger.error("'keyctl' could not be found on the system")
-            raise NoExecutableException
+            return None
 
     def has_key(self):
         """Return true if the key can be retrieved from system
@@ -63,14 +62,8 @@ class Session:
             raise LockException from e
 
     def unlock(self, password):
-        """Unlock bw and store session data in keyctl
+        """Unlock bw and store session data in keyctl"""
 
-        Arguments:
-            password {string} -- Master password for bitwarden
-
-        Raises:
-            UnlockException: Raised when any of the processes return errors
-        """
         try:
             self._logger.info("Unlocking bw using password")
 
@@ -97,14 +90,8 @@ class Session:
             raise UnlockException
 
     def get_key(self):
-        """Return the session key from memory or from keyctl
+        """Return the session key from memory or from keyctl"""
 
-        Raises:
-            KeyReadException: Raised when the key fails to be retrieved
-
-        Returns:
-            [string] -- [Session key used to unlock bw]
-        """
         try:
             self._logger.info("Started key retrieval sequence")
             if self.auto_lock == 0:
@@ -143,11 +130,6 @@ class Session:
 
 class SessionException(Exception):
     """Base exception for all errors raised by Session"""
-    pass
-
-
-class NoExecutableException(SessionException):
-    """Raised when the keyctl could not be found in system"""
     pass
 
 

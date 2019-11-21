@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from settings import NAME
+from session import Session
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -35,7 +36,8 @@ def parse_arguments():
         "-t", "--timeout",
         help="R|automatically lock the vault in TIMEOUT seconds\n" +
         "use 0 to lock immediately\n" +
-        "use -1 to disable\n"
+        "use -1 to disable\n" +
+        f"default: {Session.DEFAULT_TIMEOUT}"
     )
 
     parser.add_argument(

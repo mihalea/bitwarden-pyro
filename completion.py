@@ -44,7 +44,7 @@ class Completion:
                 self._logger.debug("Found valid executable '%s'", t)
                 return t
 
-        # If not valid executable has been found, log and exit
+        # If no valid executable has been found, log and raise
         self._logger.critical(
             "Could not find executable: '%s'", tools
         )
@@ -93,9 +93,7 @@ class Completion:
                 self._logger.critical(
                     "No supported executables found for '%s'", tool_group
                 )
-                raise NoExecutableException(
-                    f"Failed to find executable for {tool_group}"
-                )
+                return None
 
             # List of unique desktop sessions for which executables have
             # been found
