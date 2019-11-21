@@ -20,9 +20,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-v", "--version",
+        "--version",
         help="show version information and exit",
         action="store_true"
+    )
+
+    parser.add_argument(
+        '-v', '--verbose',
+        help="increase verbosity level",
+        action='store_true',
     )
 
     parser.add_argument(
