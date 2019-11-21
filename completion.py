@@ -8,8 +8,6 @@ import os
 
 
 class Completion:
-    _logger = None
-
     _default_tools = {
         'autotype': {
             'x11': ['xdotool'],

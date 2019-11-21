@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from subprocess import CalledProcessError
-from traceback import print_exc
 from shutil import which
 from logger import BwLogger
 import subprocess as sp
@@ -10,7 +9,6 @@ import re
 class Session:
     KEY_NAME = "bw_session"
     DEFAULT_TIMEOUT = 900
-    _logger = None
 
     def __init__(self, auto_lock):
         # Interval in seconds for locking the vault
@@ -80,11 +78,12 @@ class Session:
             if self.auto_lock != 0:
                 self._logger.info("Saving key to keyctl")
                 keyid = self.__get_keyid()
-                if keyid is None:
-                    send_cmd = f"echo {self.key}"
-                    padd_cmd = f"keyctl padd user {self.KEY_NAME} @u"
-                    proc = sp.Popen(send_cmd.split(), stdout=sp.PIPE)
-                    sp.check_output(padd_cmd.split(), stdin=proc.stdout)
+                if keyid is not None:
+                    self._logger.info("Overwriting old key")
+                send_cmd = f"echo {self.key}"
+                padd_cmd = f"keyctl padd user {self.KEY_NAME} @u"
+                proc = sp.Popen(send_cmd.split(), stdout=sp.PIPE)
+                sp.check_output(padd_cmd.split(), stdin=proc.stdout)
         except CalledProcessError:
             self._logger.warning("Failed to unlock bitwarden")
             raise UnlockException

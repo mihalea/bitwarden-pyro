@@ -26,7 +26,7 @@ class BwLogger(object, metaclass=SingletonType):
         fh.setLevel(logging.DEBUG)
         # create console handler with a higher log level
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO if verbose is None else logging.DEBUG)
+        ch.setLevel(logging.INFO if not verbose else logging.DEBUG)
 
         # create formatter and add it to the handlers
         consoleFormatter = None
