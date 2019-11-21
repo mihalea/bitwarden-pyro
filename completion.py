@@ -27,7 +27,7 @@ class Completion:
                 'xclip': {
                     'get': 'xclip -selection clipboard -o',
                     'set': 'xclip -selection clipboard -r',
-                    'clr': 'echo | xclip -selection clipboard -r'
+                    'clr': 'echo "" | xclip -selection clipboard -r'
                 },
                 'xsel': {
                     'get': 'xsel --clipboard',
@@ -46,6 +46,50 @@ class Completion:
 
         self._type = self.__init_executable('autotype')
         self._copy = self.__init_executable('copy')
+
+    def clipboard_get(self):
+        return self.__emulate_clipboard('get')
+
+    def clipboard_set(self, value):
+        self.__emulate_clipboard('set', value)
+
+    def clipboard_clear(self):
+        self.__emulate_clipboard('clr')
+
+    def __emulate_clipboard(self, action, value=None):
+        """Interact with the clipboard"""
+
+        try:
+            self._logger.debug("Interacting with clipboard: %s", action)
+            command = self._copy.get(action)
+
+            if command is not None:
+                self._logger.debug("Executing command %s", command)
+
+                input_cmd = None
+                if "|" in command:
+                    cmds = command.split("|")
+                    input_cmd = cmds[0]
+                    command = cmds[1]
+                elif value is not None:
+                    input_cmd = f"echo {value}"
+
+                if input_cmd is not None:
+                    input_cmd = input_cmd.split(" ", 2)
+                    ep = sp.Popen(input_cmd, stdout=sp.PIPE)
+                    output = sp.Popen(command.split(), stdin=ep.stdout)
+                else:
+                    output = sp.check_output(command.split())
+                    return output
+
+            else:
+                self._logger.error(
+                    "Action %s is not supported for clipboard", action
+                )
+                raise CopyingException
+        except CalledProcessError as e:
+            self._logger.error("Failed to interact with clipboard")
+            raise CopyingException from e
 
     def type_string(self, string):
         """Type a string emulating a keyboard"""
@@ -66,7 +110,7 @@ class Completion:
             sp.run(type_cmd.split(), check=True)
         except CalledProcessError as e:
             self._logger.error("Failed to emulate keyboard input")
-            raise TypingError from e
+            raise TypingException from e
 
     def __find_executable(self, tools):
         """Return a single executable installed on the system from the list"""
@@ -164,6 +208,11 @@ class NotDecisiveException(CompletionException):
     pass
 
 
-class TypingError(CompletionException):
+class TypingException(CompletionException):
     """Raised when emulating keyboard strings failed"""
+    pass
+
+
+class CopyingException(CompletionException):
+    """Raised when interacting with the clipboard failed"""
     pass
