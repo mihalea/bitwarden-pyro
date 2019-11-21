@@ -2,47 +2,83 @@
 
 from shutil import which
 from logger import BwLogger
+from subprocess import CalledProcessError
+import subprocess as sp
 import os
 
 
 class Completion:
     _logger = None
+
     _default_tools = {
         'autotype': {
             'x11': ['xdotool'],
             'wayland': ['sudo ydotool']
         },
         'copy': {
-            'wayland': ['wl-copy'],
-            'x11': ['xclip', 'xsel']
+            'wayland': {
+                'wl-copy': {
+                    'get': 'wl-paste',
+                    'set': 'wl-copy',
+                    'clr': 'wl-copy --clear'
+                }
+            },
+            'x11': {
+                'xclip': {
+                    'get': 'xclip -selection clipboard -o',
+                    'set': 'xclip -selection clipboard -r',
+                    'clr': 'echo | xclip -selection clipboard -r'
+                },
+                'xsel': {
+                    'get': 'xsel --clipboard',
+                    'set': 'xsel --clipboard --input',
+                    'clr': 'xsel --clipboard --delete'
+                }}
         }
     }
 
     def __init__(self):
         self._type = None
         self._copy = None
+        self._tools = None
 
         self._logger = BwLogger().get_logger()
+
         self._type = self.__init_executable('autotype')
         self._copy = self.__init_executable('copy')
 
+    def type_string(self, string):
+        """Type a string emulating a keyboard"""
+
+        self.__emulate_keyboard('type', string)
+
+    def type_key(self, key):
+        """Type a single key emulating a keyboard"""
+
+        self.__emulate_keyboard('key', key)
+
+    def __emulate_keyboard(self, action, value):
+        """Emulate keyboard input"""
+
+        try:
+            self._logger.debug("Emulating keyboard input for %s", action)
+            type_cmd = f"{self._type} {action} {value}"
+            sp.run(type_cmd.split(), check=True)
+        except CalledProcessError as e:
+            self._logger.error("Failed to emulate keyboard input")
+            raise TypingError from e
+
     def __find_executable(self, tools):
-        """Return a single executable installed on the system
-
-        Arguments:
-            tools {list of string} -- A list of possible executable names
-
-        Raises:
-            NoExecutableException: Raised when no suitable executable has been found
-
-        Returns:
-            string -- Name of valid executable
-        """
+        """Return a single executable installed on the system from the list"""
 
         for t in tools:
             if which(t) is not None:
                 self._logger.debug("Found valid executable '%s'", t)
-                return t
+
+                if isinstance(tools, dict):
+                    return tools.get(t)
+                else:
+                    return t
 
         # If no valid executable has been found, log and raise
         self._logger.critical(
@@ -51,14 +87,8 @@ class Completion:
         raise NoExecutableException
 
     def __init_executable(self, tool_group):
-        """Find the most appropriate executables based on session type
+        """Find the most appropriate executables based on session type"""
 
-        Arguments:
-            tool_group {string} -- Name of a valid tool group
-
-        Returns:
-            string -- Name of a valid executable
-        """
         session_type = os.getenv('XDG_SESSION_TYPE')
         self._logger.debug("Initialising executable for %s", tool_group)
 
@@ -131,4 +161,9 @@ class UnsupportedDesktopException(CompletionException):
 
 class NotDecisiveException(CompletionException):
     """Raised when no decision upon which executable can be made"""
+    pass
+
+
+class TypingError(CompletionException):
+    """Raised when emulating keyboard strings failed"""
     pass
