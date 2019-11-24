@@ -6,7 +6,13 @@ from settings import NAME, VERSION
 from session import Session, SessionException
 from rofi import Rofi
 from completion import Completion, CompletionException
-from vault import Vault, VaultException
+from vault import Vault, VaultFormatter, VaultException
+from enum import Enum, auto
+
+
+class ControllerAction(Enum):
+    SELECT_SINGLE = auto()
+    SELECT_MULTIPLE = auto()
 
 
 class Controller:
@@ -32,6 +38,23 @@ class Controller:
         else:
             self._logger.info("Unlocking aborted")
             exit(0)
+
+    def __show_items(self):
+        items = self._vault.get_items()
+        formatted = VaultFormatter.unique_format(items)
+        selected_name = self._rofi.show_items(formatted)
+        self._logger.debug("User selected login: %s", selected_name)
+
+        if selected_name.startswith(VaultFormatter.DEDUP_MARKER) and \
+                len(self._vault.get_by_name(selected_name)) == 0:
+            self._logger.debug("User selected item group")
+            group_name = selected_name[len(VaultFormatter.DEDUP_MARKER):]
+            selected_items = self._vault.get_by_name(group_name)
+            return (ControllerAction.SELECT_MULTIPLE, selected_items)
+        else:
+            self._logger.debug("User selected single item")
+            selected_item = self._vault.get_by_name(selected_name)
+            return (ControllerAction.SELECT_SINGLE, selected_item)
 
     def __load_items(self):
         try:
@@ -73,6 +96,8 @@ class Controller:
             self.__unlock()
 
         self.__load_items()
+        item = self.__show_items()
+        print(item)
 
 
 def main():
