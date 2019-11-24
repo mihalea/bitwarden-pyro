@@ -41,16 +41,24 @@ class Controller:
 
     def __show_items(self):
         items = self._vault.get_items()
+        # Convert items to \n separated strings
         formatted = VaultFormatter.unique_format(items)
         selected_name = self._rofi.show_items(formatted)
         self._logger.debug("User selected login: %s", selected_name)
 
-        if selected_name.startswith(VaultFormatter.DEDUP_MARKER) and \
+        # Rofi dialog has been closed
+        if selected_name is None:
+            self._logger.debug("Item selection has been aborted")
+            return (None, None)
+        # Make sure that the group item isn't a single item where
+        # the deduplication marker coincides
+        elif selected_name.startswith(VaultFormatter.DEDUP_MARKER) and \
                 len(self._vault.get_by_name(selected_name)) == 0:
             self._logger.debug("User selected item group")
             group_name = selected_name[len(VaultFormatter.DEDUP_MARKER):]
             selected_items = self._vault.get_by_name(group_name)
-            return (None, selected_items)
+            return (ControllerAction.DEFAULT_ACTION, selected_items)
+        # A single item has been selected
         else:
             self._logger.debug("User selected single item")
             selected_item = self._vault.get_by_name(selected_name)
@@ -60,11 +68,16 @@ class Controller:
         name = items[0]['name']
         formatted = VaultFormatter.group_format(items)
         rofi_selected = self._rofi.show_items(formatted, name)
-        regex = r"^#([0-9]+): .*"
-        match = re.search(regex, rofi_selected)
-        selected_index = int(match.group(1)) - 1
-        selected_item = items[selected_index]
-        return (ControllerAction.DEFAULT_ACTION, selected_item)
+
+        if rofi_selected is None:
+            self._logger.debug("Group item selection has been aborted")
+            return (None, None)
+        else:
+            regex = r"^#([0-9]+): .*"
+            match = re.search(regex, rofi_selected)
+            selected_index = int(match.group(1)) - 1
+            selected_item = items[selected_index]
+            return (ControllerAction.DEFAULT_ACTION, selected_item)
 
     def __load_items(self):
         try:
@@ -108,10 +121,13 @@ class Controller:
         self.__load_items()
 
         action, item = self.__show_items()
-        if len(item) > 1:
+        # A group of items has been selected
+        if action is not None and len(item) > 1:
             action, item = self.__show_group_items(item)
 
-        print(action)
+        # Selection has been aborted
+        if action == None:
+            exit(0)
 
 
 def main():
