@@ -8,11 +8,11 @@ from rofi import Rofi
 from completion import Completion, CompletionException
 from vault import Vault, VaultFormatter, VaultException
 from enum import Enum, auto
+import re
 
 
 class ControllerAction(Enum):
-    SELECT_SINGLE = auto()
-    SELECT_MULTIPLE = auto()
+    DEFAULT_ACTION = auto()
 
 
 class Controller:
@@ -50,11 +50,21 @@ class Controller:
             self._logger.debug("User selected item group")
             group_name = selected_name[len(VaultFormatter.DEDUP_MARKER):]
             selected_items = self._vault.get_by_name(group_name)
-            return (ControllerAction.SELECT_MULTIPLE, selected_items)
+            return (None, selected_items)
         else:
             self._logger.debug("User selected single item")
             selected_item = self._vault.get_by_name(selected_name)
-            return (ControllerAction.SELECT_SINGLE, selected_item)
+            return (ControllerAction.DEFAULT_ACTION, selected_item)
+
+    def __show_group_items(self, items):
+        name = items[0]['name']
+        formatted = VaultFormatter.group_format(items)
+        rofi_selected = self._rofi.show_items(formatted, name)
+        regex = r"^#([0-9]+): .*"
+        match = re.search(regex, rofi_selected)
+        selected_index = int(match.group(1)) - 1
+        selected_item = items[selected_index]
+        return (ControllerAction.DEFAULT_ACTION, selected_item)
 
     def __load_items(self):
         try:
@@ -96,8 +106,12 @@ class Controller:
             self.__unlock()
 
         self.__load_items()
-        item = self.__show_items()
-        print(item)
+
+        action, item = self.__show_items()
+        if len(item) > 1:
+            action, item = self.__show_group_items(item)
+
+        print(action)
 
 
 def main():

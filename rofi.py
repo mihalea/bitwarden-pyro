@@ -21,12 +21,12 @@ class Rofi:
             self._logger.info("Password prompt has been closed")
             return None
 
-    def show_items(self, items):
+    def show_items(self, items, prompt='Bitwarden'):
         try:
             self._logger.info("Launching rofi login select")
             echo_cmd = ["echo", items]
             rofi_cmd = [
-                "rofi", "-dmenu", "-p", "Bitwarden", "-i", "-no-custom"
+                "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
             ]
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.check_output(rofi_cmd, stdin=echo_proc.stdout)
