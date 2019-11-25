@@ -3,7 +3,8 @@ from bitwarden_pyro.util.arguments import parse_arguments
 from bitwarden_pyro.settings import NAME, VERSION
 from bitwarden_pyro.view.rofi import Rofi
 from bitwarden_pyro.controller.session import Session, SessionException
-from bitwarden_pyro.controller.completion import Completion, CompletionException
+from bitwarden_pyro.controller.autotype import AutoType, AutoTypeException
+from bitwarden_pyro.controller.clipboard import Clipboard, ClipboardException
 from bitwarden_pyro.controller.vault import Vault, VaultFormatter, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
 
@@ -15,9 +16,10 @@ import re
 class BwPyro:
     def __init__(self):
         self._rofi = None
-        self._completion = None
         self._session = None
         self._vault = None
+        self._clipboard = None
+        self._autotype = None
         self._args = parse_arguments()
         self._logger = ProjectLogger(self._args.verbose).get_logger()
 
@@ -120,7 +122,8 @@ class BwPyro:
         try:
             self._session = Session(self._args.timeout)
             self._rofi = Rofi(self._args.rofi_args, self._args.enter)
-            self._completion = Completion(self._args.clear)
+            self._clipboard = Clipboard(self._args.clear)
+            self._autotype = AutoType()
             self._vault = Vault()
 
             self._enter_action = self._args.enter
@@ -128,7 +131,8 @@ class BwPyro:
             self._rofi.add_keybind('Alt+2', ItemActions.ALL)
             self._rofi.add_keybind('Alt+t', ItemActions.TOTP)
             self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
-        except (CompletionException, SessionException, VaultException):
+        except (ClipboardException, AutoTypeException,
+                SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
             exit(1)
 
@@ -155,33 +159,34 @@ class BwPyro:
 
             if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")
-                self._completion.clipboard_set(item['login']['password'])
+                self._clipboard.set(item['login']['password'])
             elif action == ItemActions.ALL:
                 self._logger.info("Auto tying username and password")
                 # Input delay allowing correct window to be focused
                 sleep(1)
-                self._completion.type_string(item['login']['username'])
+                self._autotype.string(item['login']['username'])
                 sleep(0.2)
-                self._completion.type_key('Tab')
+                self._autotype.key('Tab')
                 sleep(0.2)
-                self._completion.type_string(item['login']['password'])
+                self._autotype.string(item['login']['password'])
             elif action == ItemActions.PASSWORD:
                 # Input delay allowing correct window to be focused
                 sleep(1)
                 self._logger.info("Auto typing password")
-                self._completion.type_string(item['login']['password'])
+                self._autotype.string(item['login']['password'])
             elif action == ItemActions.TOTP:
                 self._logger.info("Copying TOTP to clipboard")
                 totp = self._vault.get_topt(item['id'])
                 if totp is not None:
-                    self._completion.clipboard_set(totp)
+                    self._clipboard.set(totp)
                 else:
                     self._logger.warning(
                         "Selected item does not provide a TOTP"
                     )
             else:
                 self._logger.error("Unknown action received: %s", action)
-        except (CompletionException, SessionException, VaultException):
+        except (AutoTypeException, ClipboardException,
+                SessionException, VaultException):
             self._logger.error("Application has received a critical error")
 
 
