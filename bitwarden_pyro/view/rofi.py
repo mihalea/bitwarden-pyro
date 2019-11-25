@@ -5,18 +5,20 @@ from subprocess import CalledProcessError
 
 
 class Keybind:
-    def __init__(self, key, event):
+    def __init__(self, key, event, message):
         self.key = key
         self.event = event
+        self.message = message
 
 
 class Rofi:
-    def __init__(self, args, enter_event):
+    def __init__(self, args, enter_event, hide_mesg):
         self._logger = ProjectLogger().get_logger()
         self._keybinds = {}
         self._args = args[1:]
-        self._keybinds_code = 10
         self._enter_event = enter_event
+        self._hide_mesg = hide_mesg
+        self._keybinds_code = 10
 
         if len(args) > 0:
             self._logger.debug("Setting rofi arguments: %s", self._args)
@@ -24,6 +26,17 @@ class Rofi:
     def __extend_command(self, command):
         if len(self._args) > 0:
             command.extend(self._args)
+
+        if not self._hide_mesg:
+            mesg = []
+            for kb in self._keybinds.values():
+                if kb.message is not None:
+                    mesg.append(f"<b>{kb.key}</b>: {kb.message}")
+
+            if len(mesg) > 0:
+                command.extend([
+                    "-mesg", ", ".join(mesg)
+                ])
 
         for code, keybind in self._keybinds.items():
             command.extend([
@@ -33,14 +46,14 @@ class Rofi:
 
         return command
 
-    def add_keybind(self, key, event):
+    def add_keybind(self, key, event, message=None):
         if self._keybinds_code == 28:
             self._logger.warning(
                 "The maximum number of keybinds has been reached"
             )
             raise KeybindException
 
-        self._keybinds[self._keybinds_code] = Keybind(key, event)
+        self._keybinds[self._keybinds_code] = Keybind(key, event, message)
         self._keybinds_code += 1
 
     def get_password(self):
@@ -51,7 +64,6 @@ class Rofi:
                 "-password", "-lines", "0"
             ])
 
-            self._logger.debug("Running command: %s", cmd)
             cp = sp.run(cmd, check=True, capture_output=True)
             return cp.stdout.decode("utf-8").strip()
         except CalledProcessError:

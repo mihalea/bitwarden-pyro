@@ -153,20 +153,46 @@ class BwPyro:
         self._logger.info("Application has been launched")
         try:
             self._session = Session(self._args.timeout)
-            self._rofi = Rofi(self._args.rofi_args, self._args.enter)
+            self._rofi = Rofi(self._args.rofi_args,
+                              self._args.enter,
+                              self._args.hide_mesg)
             self._clipboard = Clipboard(self._args.clear)
             self._autotype = AutoType()
             self._vault = Vault()
 
             self._enter_action = self._args.enter
-            self._rofi.add_keybind('Alt+1', ItemActions.PASSWORD)
-            self._rofi.add_keybind('Alt+2', ItemActions.ALL)
-            self._rofi.add_keybind('Alt+t', ItemActions.TOTP)
-            self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
-            self._rofi.add_keybind('Alt+u', WindowActions.SHOW_URI)
-            self._rofi.add_keybind('Alt+n', WindowActions.SHOW_NAMES)
-            self._rofi.add_keybind('Alt+l', WindowActions.SHOW_LOGIN)
-            self._rofi.add_keybind('Alt+c', WindowActions.SHOW_FOLDERS)
+            self._rofi.add_keybind(
+                'Alt+1', ItemActions.PASSWORD,
+                "Type password"
+            )
+            self._rofi.add_keybind(
+                'Alt+2', ItemActions.ALL,
+                "Type all"
+            )
+            self._rofi.add_keybind(
+                'Alt+u', WindowActions.SHOW_URI,
+                "Show uris"
+            )
+            self._rofi.add_keybind(
+                'Alt+n', WindowActions.SHOW_NAMES,
+                "Show names"
+            )
+            self._rofi.add_keybind(
+                'Alt+l', WindowActions.SHOW_LOGIN,
+                "Show logins"
+            )
+            self._rofi.add_keybind(
+                'Alt+c', WindowActions.SHOW_FOLDERS,
+                "Show folders"
+            )
+            self._rofi.add_keybind(
+                'Alt+t', ItemActions.TOTP,
+                "totp"
+            )
+            self._rofi.add_keybind(
+                'Alt+r', WindowActions.SYNC,
+                "sync"
+            )
         except (ClipboardException, AutoTypeException,
                 SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")

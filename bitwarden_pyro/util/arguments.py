@@ -41,6 +41,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--hide-mesg",
+        help="Hide message explaining keybinds",
+        action="store_true"
+    )
+
+    parser.add_argument(
         "-t", "--timeout",
         help=f"R|automatically lock the vault after TIMEOUT seconds (default: {Session.DEFAULT_TIMEOUT})\n" +
         "use  0 to lock immediately\n" +
