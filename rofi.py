@@ -11,9 +11,13 @@ class Keybind:
 
 
 class Rofi:
-    def __init__(self):
+    def __init__(self, args):
         self._logger = BwLogger().get_logger()
         self._keybinds = {}
+        self._args = args[1:]
+
+        if len(args) > 0:
+            self._logger.debug("Setting rofi arguments: %s", self._args)
 
     def add_keybind(self, action, key, event):
         self._keybinds[action + 9] = Keybind(key, event)
@@ -25,6 +29,10 @@ class Rofi:
                 "rofi", "-dmenu", "-p", "Master Password",
                 "-password", "-lines", "0"
             ]
+
+            if len(self._args) > 0:
+                cmd.extend(self._args)
+
             cp = sp.run(cmd, check=True, capture_output=True)
             return cp.stdout.decode("utf-8").strip()
         except CalledProcessError:
@@ -38,6 +46,10 @@ class Rofi:
             rofi_cmd = [
                 "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
             ]
+
+            if len(self._args) > 0:
+                rofi_cmd.extend(self._args)
+
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.run(
                 rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE

@@ -119,7 +119,7 @@ class Controller:
         self._logger.info("Application has been launched")
         try:
             self._session = Session(self._args.timeout)
-            self._rofi = Rofi()
+            self._rofi = Rofi(self._args.rofi_args)
             self._completion = Completion()
             self._vault = Vault()
 
@@ -162,9 +162,9 @@ class Controller:
                 # Input delay allowing correct window to be focused
                 sleep(1)
                 self._completion.type_string(item['login']['username'])
-                sleep(0.1)
+                sleep(0.2)
                 self._completion.type_key('Tab')
-                sleep(0.1)
+                sleep(0.2)
                 self._completion.type_string(item['login']['password'])
             elif action == KeybindActions.PASSWORD:
                 # Input delay allowing correct window to be focused
