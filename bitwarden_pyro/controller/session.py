@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from subprocess import CalledProcessError
 from shutil import which
-from logger import BwLogger
+from bitwarden_pyro.util.logger import BwLogger
 import subprocess as sp
 import re
 

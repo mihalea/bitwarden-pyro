@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
-from logger import BwLogger
-from arguments import parse_arguments
-from settings import NAME, VERSION
-from session import Session, SessionException
-from rofi import Rofi
-from completion import Completion, CompletionException
-from vault import Vault, VaultFormatter, VaultException
+from bitwarden_pyro.util.logger import BwLogger
+from bitwarden_pyro.util.arguments import parse_arguments
+from bitwarden_pyro.settings import NAME, VERSION
+from bitwarden_pyro.view.rofi import Rofi
+from bitwarden_pyro.controller.session import Session, SessionException
+from bitwarden_pyro.controller.completion import Completion, CompletionException
+from bitwarden_pyro.controller.vault import Vault, VaultFormatter, VaultException
+from bitwarden_pyro.model.actions import ItemActions, WindowActions
+
 from enum import Enum, auto
 from time import sleep
-from actions import ItemActions, WindowActions
 import re
 
 
@@ -197,10 +198,6 @@ class Controller:
             self._logger.error("Application has received a critical error")
 
 
-def main():
+def run():
     controller = Controller()
     controller.start()
-
-
-if __name__ == "__main__":
-    main()

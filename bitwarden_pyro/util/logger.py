@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-from settings import NAME
+from bitwarden_pyro.settings import NAME
 
 
 class SingletonType(type):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from shutil import which
-from logger import BwLogger
+from bitwarden_pyro.util.logger import BwLogger
 from subprocess import CalledProcessError
 from enum import Enum, auto
 from time import sleep

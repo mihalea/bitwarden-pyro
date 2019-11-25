@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import subprocess as sp
 from subprocess import CalledProcessError
-from logger import BwLogger
+from bitwarden_pyro.util.logger import BwLogger
 
 
 class Keybind:
