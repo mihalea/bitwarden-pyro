@@ -54,11 +54,10 @@ class BwPyro:
         k = self._session.get_key()
         self._vault.set_key(k)
 
-    def __show_items(self, fields=['name']):
+    def __show_items(self):
         items = self._vault.get_items()
         # Convert items to \n separated strings
-        converter = ConverterFactory.create(fields)
-        formatted = ItemFormatter.unique_format(items, converter)
+        formatted = ItemFormatter.unique_format(items)
         selected_name, event = self._rofi.show_items(formatted)
         self._logger.debug("User selected login: %s", selected_name)
 
@@ -80,13 +79,13 @@ class BwPyro:
             selected_item = self._vault.get_by_name(selected_name)
             return (event, selected_item)
 
-    def __show_group_items(self, items, fields):
+    def __show_group_items(self, items=None, fields=None, ignore=None):
         if items is None:
             items = self._vault.get_items()
 
         name = items[0]['name']
-        converter = ConverterFactory.create(fields)
-        formatted = ItemFormatter.group_format(items, converter)
+        converter = ConverterFactory.create(fields, ignore)
+        indexed, formatted = ItemFormatter.group_format(items, converter)
         selected_name, event = self._rofi.show_items(formatted, name)
 
         # Rofi has been closed
@@ -98,7 +97,7 @@ class BwPyro:
             regex = r"^#([0-9]+): .*"
             match = re.search(regex, selected_name)
             selected_index = int(match.group(1)) - 1
-            selected_item = items[selected_index]
+            selected_item = indexed[selected_index]
             return (event, selected_item)
 
     def __load_items(self):
@@ -139,6 +138,7 @@ class BwPyro:
             self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
             self._rofi.add_keybind('Alt+u', WindowActions.SHOW_URI)
             self._rofi.add_keybind('Alt+n', WindowActions.SHOW_NAMES)
+            self._rofi.add_keybind('Alt+l', WindowActions.SHOW_LOGIN)
         except (ClipboardException, AutoTypeException,
                 SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
@@ -149,21 +149,26 @@ class BwPyro:
             self.__unlock()
             self.__load_items()
 
-            action, item = self.__show_items()
+            action = WindowActions.SHOW_NAMES
             while action is not None and isinstance(action, WindowActions):
+                self._logger.info("Switch window mode to %s", action)
                 # A group of items has been selected
-                if action == WindowActions.SHOW_GROUP:
+                if action == WindowActions.SHOW_NAMES:
+                    action, item = self.__show_items()
+                elif action == WindowActions.SHOW_GROUP:
                     action, item = self.__show_group_items(
-                        item,
-                        ['login.username']
+                        items=item,
+                        fields=['login.username']
                     )
                 elif action == WindowActions.SHOW_URI:
-                    action, item = self.__show_items(
-                        ['name', 'login.uris.uri']
+                    action, item = self.__show_group_items(
+                        fields=['login.uris.uri'],
+                        ignore=['http://', 'https://', 'None']
                     )
-                elif action == WindowActions.SHOW_NAMES:
-                    action, item = self.__show_items(
-                        ['name']
+
+                elif action == WindowActions.SHOW_LOGIN:
+                    action, item = self.__show_group_items(
+                        fields=['name', 'login.username']
                     )
                 elif action == WindowActions.SYNC:
                     self._logger.info("Received SYNC command")

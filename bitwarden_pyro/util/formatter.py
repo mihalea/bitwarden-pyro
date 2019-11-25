@@ -2,7 +2,7 @@ class ItemFormatter:
     DEDUP_MARKER = '+ '
 
     @staticmethod
-    def unique_format(items, converter):
+    def unique_format(items):
         unique = {}
         for item in items:
             arr = unique.get(item['name'], [])
@@ -12,7 +12,7 @@ class ItemFormatter:
         strings = []
         for name, arr in unique.items():
             if len(arr) == 1:
-                strings.append(converter(arr[0]))
+                strings.append(name)
             else:
                 strings.append(
                     f"{ItemFormatter.DEDUP_MARKER}{name}")
@@ -22,17 +22,21 @@ class ItemFormatter:
     @staticmethod
     def group_format(items, converter):
         strings = []
+        indexed = []
         index = 1
         for item in items:
-            strings.append(f"#{index}: {converter(item)}")
-            index += 1
+            name = converter(item)
+            if name is not None:
+                indexed.append(item)
+                strings.append(f"#{index}: {converter(item)}")
+                index += 1
 
-        return '\n'.join(strings)
+        return (indexed, '\n'.join(strings))
 
 
 class ConverterFactory:
     @staticmethod
-    def create(fields, delim=": ", delim2=","):
+    def create(fields, ignore=['None'], delim=": ", delim2=","):
         def converter(item):
             values = []
             for f in fields:
@@ -52,11 +56,21 @@ class ConverterFactory:
                 if value is None:
                     value = 'None'
 
+                if ignore is not None:
+                    if isinstance(value, list):
+                        value = [v for v in value if v not in ignore]
+                    elif value.strip() in ignore:
+                        continue
+
                 if isinstance(value, list):
-                    values.append(delim2.join(value))
+                    if len(value) > 0:
+                        values.append(delim2.join(value))
                 else:
                     values.append(value)
 
-            return delim.join(values)
+            if len(values) > 0:
+                return delim.join(values)
+            else:
+                return None
 
         return converter
