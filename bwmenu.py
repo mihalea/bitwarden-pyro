@@ -27,8 +27,18 @@ class Controller:
         if self._args.version:
             print(f"{NAME} v{VERSION}")
             exit()
+        elif self._args.lock:
+            self.__lock()
         else:
             self.__launch_ui()
+
+    def __lock(self):
+        try:
+            self._logger.info("Locking vault and deleting session")
+            self._session = Session()
+            self._session.lock()
+        except SessionException:
+            pass
 
     def __unlock(self):
         pwd = self._rofi.get_password()
@@ -149,7 +159,7 @@ class Controller:
             action, item = self.__show_items()
             while action is not None and isinstance(action, WindowActions):
                 # A group of items has been selected
-                if action == WindowActions.SHOW_GROUP and len(item) > 1:
+                if action == WindowActions.SHOW_GROUP:
                     action, item = self.__show_group_items(item)
                 elif action == WindowActions.SYNC:
                     self._logger.info("Received SYNC command")
@@ -160,10 +170,6 @@ class Controller:
             if action == None:
                 self._logger.info("Exiting. Login selection has been aborted")
                 exit(0)
-
-            # A single item has been selected
-            if len(item) == 1:
-                item = item[0]
 
             if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")

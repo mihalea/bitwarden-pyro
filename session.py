@@ -10,7 +10,7 @@ class Session:
     KEY_NAME = "bw_session"
     DEFAULT_TIMEOUT = 900
 
-    def __init__(self, auto_lock):
+    def __init__(self, auto_lock=None):
         # Interval in seconds for locking the vault
         self.auto_lock = int(auto_lock) \
             if auto_lock is not None else self.DEFAULT_TIMEOUT
@@ -52,9 +52,12 @@ class Session:
             LockException: Raised when the spawned process returns errors
         """
         try:
-            self._logger.info("Deleting key from keyctl")
-            lock_cmd = f"keyctl purge user {self.KEY_NAME}"
-            sp.run(lock_cmd.split(), check=True)
+            self._logger.info("Deleting key from keyctl and locking bw")
+            keyctl_cmd = f"keyctl purge user {self.KEY_NAME}"
+            sp.run(keyctl_cmd.split(), check=True, capture_output=True)
+
+            bw_cmd = "bw lock"
+            sp.run(bw_cmd.split(), check=True, capture_output=True)
         except CalledProcessError as e:
             self._logger.exception("Failed to delete key from keyctl")
             raise LockException from e

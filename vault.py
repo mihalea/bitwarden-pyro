@@ -40,7 +40,11 @@ class Vault:
         return self._items
 
     def get_by_name(self, name):
-        return [i for i in self._items if i['name'] == name]
+        items = [i for i in self._items if i['name'] == name]
+        if len(items) == 1:
+            return items[0]
+        else:
+            return items
 
 
 class VaultFormatter:
