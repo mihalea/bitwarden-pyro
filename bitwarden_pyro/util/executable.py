@@ -6,16 +6,14 @@ import os
 
 
 class Executable:
-    def __init__(self, tools):
-        self._tools = tools
-        self._logger = ProjectLogger().get_logger()
-
-    def __find_executable(self, tools):
+    @staticmethod
+    def __find_executable(tools):
         """Return a single executable installed on the system from the list"""
+        logger = ProjectLogger().get_logger()
 
         for t in tools:
             if which(t) is not None:
-                self._logger.debug("Found valid executable '%s'", t)
+                logger.debug("Found valid executable '%s'", t)
 
                 if isinstance(tools, dict):
                     return tools.get(t)
@@ -23,46 +21,49 @@ class Executable:
                     return t
 
         # If no valid executable has been found, log and raise
-        self._logger.critical(
+        logger.critical(
             "Could not find executable: '%s'", tools
         )
         raise NoExecutableException
 
-    def init_executable(self):
+    @staticmethod
+    def init_executable(tools):
         """Find the most appropriate executables based on session type"""
 
+        logger = ProjectLogger().get_logger()
+
         session_type = os.getenv('XDG_SESSION_TYPE')
-        self._logger.debug("Initialising executable")
+        logger.debug("Initialising executable")
 
         # If session is a supported one
         if session_type is not None:
-            self._logger.debug('Detected session type: %s', session_type)
-            tools = self._tools.get(session_type)
+            logger.debug('Detected session type: %s', session_type)
+            desktop_tools = tools.get(session_type)
             # If there are tools defined for the current tool_group
-            if tools is not None:
-                return self.__find_executable(tools)
+            if desktop_tools is not None:
+                return Executable.__find_executable(desktop_tools)
             else:
-                self._logger.critical(
+                logger.critical(
                     "Desktop session not supported: %s", session_type
                 )
                 raise UnsupportedDesktopException
         # If session is not supported, try and make the best
         # guess based on available executables
         else:
-            self._logger.warning(
+            logger.warning(
                 "Could not read desktop session type from environment, " +
                 "trying to guess based on detected executables"
             )
 
             # List of available executables
-            detected = [
-                (ds, tool)
-                for ds, tool in self._tools.items()
-                if which(tool) is not None
-            ]
+            detected = []
+            for desktop, items in tools.items():
+                for item in items:
+                    if which(item) is not None:
+                        detected.append((desktop, item))
 
             if len(detected) == 0:
-                self._logger.debug("No supported executables found")
+                logger.debug("No supported executables found")
                 return None
 
             # List of unique desktop sessions for which executables have
@@ -71,13 +72,13 @@ class Executable:
 
             # Available executables are all for the same desktop session
             if len(detected_sessions) == 1:
-                return self.__find_executable([d[1] for d in detected])
+                return Executable.__find_executable([d[1] for d in detected])
 
             # If executables are from multiple desktop sessions, the best one
             # can't be picked automatically, as we can't assume the currently
             # running desktop session
             elif len(detected_sessions) > 1:
-                self._logger.warning(
+                logger.warning(
                     "Found too many supported executable to be able to make " +
                     "a guess: %s", detected
                 )

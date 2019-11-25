@@ -16,14 +16,8 @@ class AutoType:
     }
 
     def __init__(self):
-        self._exec = None
+        self._exec = Executable.init_executable(self._tools)
         self._logger = ProjectLogger().get_logger()
-
-        self.__init_executable()
-
-    def __init_executable(self):
-        finder = Executable(self._tools)
-        self._exec = finder.init_executable()
 
     def string(self, string):
         """Type a string emulating a keyboard"""

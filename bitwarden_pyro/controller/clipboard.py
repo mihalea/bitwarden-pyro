@@ -38,14 +38,8 @@ class Clipboard:
 
     def __init__(self, clear):
         self._clear = clear
-        self._exec = None
+        self._exec = Executable.init_executable(self._tools)
         self._logger = ProjectLogger().get_logger()
-
-        self.__init_executable()
-
-    def __init_executable(self):
-        finder = Executable(self._tools)
-        self._exec = finder.init_executable()
 
     def get(self):
         return self.__emulate_clipboard(ClipboardEvents.GET)
