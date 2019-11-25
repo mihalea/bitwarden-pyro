@@ -40,13 +40,18 @@ class Controller:
         except SessionException:
             pass
 
-    def __unlock(self):
-        pwd = self._rofi.get_password()
-        if pwd is not None:
-            self._session.unlock(pwd)
-        else:
-            self._logger.info("Unlocking aborted")
-            exit(0)
+    def __unlock(self, force=False):
+        self._logger.info("Unlocking bitwarden vault")
+        if not self._session.has_key() or force:
+            pwd = self._rofi.get_password()
+            if pwd is not None:
+                self._session.unlock(pwd)
+            else:
+                self._logger.info("Unlocking aborted")
+                exit(0)
+
+        k = self._session.get_key()
+        self._vault.set_key(k)
 
     def __show_items(self):
         items = self._vault.get_items()
@@ -100,29 +105,17 @@ class Controller:
 
             return (action, selected_item)
 
-    def __sync_vault(self):
-        try:
-            k = self._session.get_key()
-
-            self._vault.sync(k)
-            self.__load_items()
-        except SessionException:
-            self._logger.error("Failed to sync vault items")
-
     def __load_items(self):
         try:
-            k = self._session.get_key()
-
             # First attempt at loading items
-            count = self._vault.load_items(k)
+            count = self._vault.load_items()
 
             # Second attempt, as key might get invalidated by running bw manually
             if count == 0:
                 self._logger.warning(
                     "First attempt at loading vault items failed")
-                self.__unlock()
-                k = self._session.get_key()
-                count = self._vault.load_items(k)
+                self.__unlock(force=True)
+                count = self._vault.load_items()
 
             # Last attempt failed, abort execution
             if count == 0:
@@ -139,21 +132,21 @@ class Controller:
         try:
             self._session = Session(self._args.timeout)
             self._rofi = Rofi(self._args.rofi_args)
-            self._completion = Completion()
+            self._completion = Completion(self._args.clear)
             self._vault = Vault()
 
             self._enter_action = self._args.enter
             self._rofi.add_keybind('Alt+1', ItemActions.PASSWORD)
             self._rofi.add_keybind('Alt+2', ItemActions.ALL)
+            self._rofi.add_keybind('Alt+t', ItemActions.TOTP)
             self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
         except (CompletionException, SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
             exit(1)
 
         try:
-            if not self._session.has_key():
-                self.__unlock()
 
+            self.__unlock()
             self.__load_items()
 
             action, item = self.__show_items()
@@ -163,7 +156,8 @@ class Controller:
                     action, item = self.__show_group_items(item)
                 elif action == WindowActions.SYNC:
                     self._logger.info("Received SYNC command")
-                    self.__sync_vault()
+                    self._vault.sync()
+                    self.__load_items()
                     action, item = self.__show_items()
 
             # Selection has been aborted
@@ -174,10 +168,6 @@ class Controller:
             if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")
                 self._completion.clipboard_set(item['login']['password'])
-                if self._args.clear >= 0:
-                    sleep(self._args.clear)
-                    self._logger.info("Clearing clipboard")
-                    self._completion.clipboard_clear()
             elif action == ItemActions.ALL:
                 self._logger.info("Auto tying username and password")
                 # Input delay allowing correct window to be focused
@@ -192,6 +182,15 @@ class Controller:
                 sleep(1)
                 self._logger.info("Auto typing password")
                 self._completion.type_string(item['login']['password'])
+            elif action == ItemActions.TOTP:
+                self._logger.info("Copying TOTP to clipboard")
+                totp = self._vault.get_topt(item['id'])
+                if totp is not None:
+                    self._completion.clipboard_set(totp)
+                else:
+                    self._logger.warning(
+                        "Selected item does not provide a TOTP"
+                    )
             else:
                 self._logger.error("Unknown action received: %s", action)
         except (CompletionException, SessionException, VaultException):

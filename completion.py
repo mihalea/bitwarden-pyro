@@ -4,6 +4,7 @@ from shutil import which
 from logger import BwLogger
 from subprocess import CalledProcessError
 from enum import Enum, auto
+from time import sleep
 import subprocess as sp
 import os
 
@@ -42,10 +43,11 @@ class Completion:
         }
     }
 
-    def __init__(self):
+    def __init__(self, clear):
         self._type = None
         self._copy = None
         self._tools = None
+        self._clear = clear
 
         self._logger = BwLogger().get_logger()
 
@@ -58,7 +60,12 @@ class Completion:
     def clipboard_set(self, value):
         self.__emulate_clipboard(Clipboard.SET, value)
 
-    def clipboard_clear(self):
+        if self._clear >= 0:
+            sleep(self._clear)
+            self._logger.info("Clearing clipboard")
+            self.__clipboard_clear()
+
+    def __clipboard_clear(self):
         self.__emulate_clipboard(Clipboard.CLEAR)
 
     def __emulate_clipboard(self, action, value=None):

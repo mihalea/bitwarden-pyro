@@ -9,23 +9,45 @@ import json
 class Vault:
     def __init__(self):
         self._items = None
+        self._key = None
 
         self._logger = BwLogger().get_logger()
 
-    def sync(self, key):
+    def set_key(self, key):
+        self._key = key
+
+    def sync(self):
         try:
             self._logger.info("Syncing items with bitwarden")
 
-            sync_cmd = f"bw sync --session {key}"
+            sync_cmd = f"bw sync --session {self._key}"
             sp.run(sync_cmd.split(), capture_output=True, check=True)
         except CalledProcessError:
             self._logger.error("Failed to force a bitwarden sync")
             raise SyncException
 
-    def load_items(self, key):
+    def get_topt(self, guid):
+        try:
+            self._logger.info("Requesting TOPT from bitwarden")
+
+            cmd = ['bw', '--session', self._key, 'get', 'totp', guid]
+            proc = sp.run(cmd, capture_output=True)
+
+            output = proc.stdout.decode("utf-8")
+            if proc.returncode == 0:
+                return output
+            elif "No TOTP available for this login" in output:
+                return None
+            else:
+                raise TotpException
+        except CalledProcessError:
+            self._logger.error("Failed to retrieve TOTP")
+            raise TotpException
+
+    def load_items(self):
         try:
             self._logger.info("Loading items from bw")
-            load_cmd = f"bw list items --session {key}"
+            load_cmd = f"bw list items --session {self._key}"
 
             proc = sp.run(load_cmd.split(), capture_output=True, check=True)
             items_json = proc.stdout.decode("utf-8")
@@ -33,7 +55,7 @@ class Vault:
 
             return len(self._items)
         except CalledProcessError:
-            self._logger.error("Failed to load vault items from bitwarde")
+            self._logger.error("Failed to load vault items from bitwarden")
             return 0
 
     def get_items(self):
@@ -91,4 +113,9 @@ class LoadException(VaultException):
 
 class SyncException(VaultException):
     """Raised when bitwarden fails to sync"""
+    pass
+
+
+class TotpException(VaultException):
+    """Raised when retrieving a TOTOP fails"""
     pass

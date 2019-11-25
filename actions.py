@@ -15,6 +15,7 @@ class ItemActions(BaseActions):
     COPY = 'copy'
     PASSWORD = 'passwd'
     ALL = 'all'
+    TOTP = 'topt'
 
 
 class WindowActions(BaseActions):

@@ -52,7 +52,8 @@ def parse_arguments():
         help="R|action triggered by pressing Enter (default: %(default)s)\n" +
         "copy   - copy password to clipboard\n" +
         "all    - auto type username and password\n" +
-        "passwd - auto type password\n",
+        "passwd - auto type password\n" +
+        "topt   - copy TOPT to clipboard",
         choices=list(ItemActions),
         type=ItemActions,
         default=ItemActions.COPY
