@@ -54,11 +54,11 @@ class BwPyro:
         k = self._session.get_key()
         self._vault.set_key(k)
 
-    def __show_items(self):
+    def __show_items(self, prompt):
         items = self._vault.get_items()
         # Convert items to \n separated strings
         formatted = ItemFormatter.unique_format(items)
-        selected_name, event = self._rofi.show_items(formatted)
+        selected_name, event = self._rofi.show_items(formatted, prompt)
         self._logger.debug("User selected login: %s", selected_name)
 
         # Rofi dialog has been closed
@@ -72,21 +72,25 @@ class BwPyro:
             self._logger.debug("User selected item group")
             group_name = selected_name[len(ItemFormatter.DEDUP_MARKER):]
             selected_items = self._vault.get_by_name(group_name)
-            return (WindowActions.SHOW_GROUP, selected_items)
+
+            if isinstance(event, ItemActions):
+                event = WindowActions.SHOW_GROUP
+
+            return (event, selected_items)
         # A single item has been selected
         else:
             self._logger.debug("User selected single item")
             selected_item = self._vault.get_by_name(selected_name)
             return (event, selected_item)
 
-    def __show_group_items(self, items=None, fields=None, ignore=None):
+    def __show_group_items(self, prompt, items=None, fields=None,
+                           ignore=None):
         if items is None:
             items = self._vault.get_items()
 
-        name = items[0]['name']
         converter = ConverterFactory.create(fields, ignore)
         indexed, formatted = ItemFormatter.group_format(items, converter)
-        selected_name, event = self._rofi.show_items(formatted, name)
+        selected_name, event = self._rofi.show_items(formatted, prompt)
 
         # Rofi has been closed
         if selected_name is None:
@@ -99,6 +103,29 @@ class BwPyro:
             selected_index = int(match.group(1)) - 1
             selected_item = indexed[selected_index]
             return (event, selected_item)
+
+    def __show_folders(self, prompt):
+        items = self._vault.get_folders()
+        formatted = ItemFormatter.unique_format(items)
+        selected_name, event = self._rofi.show_items(formatted, prompt)
+        self._logger.info("User selected folder: %s", selected_name)
+
+        if selected_name is None:
+            self._logger.debug("Folder selection has been aborted")
+            return (None, None)
+        else:
+            folder = [i for i in items if i['name'] == selected_name][0]
+
+            if folder['name'] == 'No Folder':
+                self._logger.debug("Clearing vault folder filter")
+                self._vault.set_filter(None)
+            else:
+                self._vault.set_filter(folder)
+
+            if isinstance(event, ItemActions):
+                event = WindowActions.SHOW_NAMES
+
+            return (event, None)
 
     def __load_items(self):
         try:
@@ -139,6 +166,7 @@ class BwPyro:
             self._rofi.add_keybind('Alt+u', WindowActions.SHOW_URI)
             self._rofi.add_keybind('Alt+n', WindowActions.SHOW_NAMES)
             self._rofi.add_keybind('Alt+l', WindowActions.SHOW_LOGIN)
+            self._rofi.add_keybind('Alt+c', WindowActions.SHOW_FOLDERS)
         except (ClipboardException, AutoTypeException,
                 SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
@@ -152,29 +180,43 @@ class BwPyro:
             action = WindowActions.SHOW_NAMES
             while action is not None and isinstance(action, WindowActions):
                 self._logger.info("Switch window mode to %s", action)
-                # A group of items has been selected
+
+                prompt = 'Bitwarden'
+                if self._vault.has_filter():
+                    prompt = self._vault.get_filter()['name']
+                    # A group of items has been selected
                 if action == WindowActions.SHOW_NAMES:
-                    action, item = self.__show_items()
+                    action, item = self.__show_items(
+                        prompt=prompt
+                    )
                 elif action == WindowActions.SHOW_GROUP:
                     action, item = self.__show_group_items(
+                        prompt=item[0]['name'],
                         items=item,
                         fields=['login.username']
                     )
                 elif action == WindowActions.SHOW_URI:
                     action, item = self.__show_group_items(
+                        prompt=prompt,
                         fields=['login.uris.uri'],
                         ignore=['http://', 'https://', 'None']
                     )
 
                 elif action == WindowActions.SHOW_LOGIN:
                     action, item = self.__show_group_items(
+                        prompt=prompt,
                         fields=['name', 'login.username']
                     )
                 elif action == WindowActions.SYNC:
-                    self._logger.info("Received SYNC command")
                     self._vault.sync()
                     self.__load_items()
-                    action, item = self.__show_items()
+                    action, item = self.__show_items(
+                        prompt=prompt
+                    )
+                elif action == WindowActions.SHOW_FOLDERS:
+                    action, item = self.__show_folders(
+                        prompt='Folders'
+                    )
 
             # Selection has been aborted
             if action == None:

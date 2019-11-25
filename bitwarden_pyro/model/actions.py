@@ -22,3 +22,4 @@ class WindowActions(BaseActions):
     SHOW_URI = 'show_uri'
     SHOW_NAMES = 'show_names'
     SHOW_LOGIN = 'show_login'
+    SHOW_FOLDERS = 'show_folders'

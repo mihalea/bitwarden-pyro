@@ -9,11 +9,23 @@ class Vault:
     def __init__(self):
         self._items = None
         self._key = None
+        self._filter = None
 
         self._logger = ProjectLogger().get_logger()
 
     def set_key(self, key):
+        self._logger.debug("Vault key set")
         self._key = key
+
+    def set_filter(self, filter):
+        self._logger.debug("Vault folder filter set")
+        self._filter = filter
+
+    def has_filter(self):
+        return self._filter is not None
+
+    def get_filter(self):
+        return self._filter
 
     def sync(self):
         try:
@@ -38,10 +50,10 @@ class Vault:
             elif "No TOTP available for this login" in output:
                 return None
             else:
-                raise TotpException
+                raise LoadException
         except CalledProcessError:
             self._logger.error("Failed to retrieve TOTP")
-            raise TotpException
+            raise LoadException
 
     def load_items(self):
         try:
@@ -57,8 +69,27 @@ class Vault:
             self._logger.error("Failed to load vault items from bitwarden")
             return 0
 
+    def get_folders(self):
+        try:
+            self._logger.info("Getting folders from bw")
+            cmd = f"bw list folders --session {self._key}"
+
+            proc = sp.run(cmd.split(), capture_output=True, check=True)
+            folders = proc.stdout.decode("utf-8")
+            return json.loads(folders)
+        except CalledProcessError:
+            self._logger.error("Failed to load vault items from bitwarden")
+            raise LoadException
+
     def get_items(self):
-        return self._items
+        if not self._filter:
+            return self._items
+        else:
+            return [
+                i for i in self._items
+                if i.get('folderId') is not None
+                and i.get('folderId') == self._filter['id']
+            ]
 
     def get_by_name(self, name):
         items = [i for i in self._items if i['name'] == name]
@@ -80,9 +111,4 @@ class LoadException(VaultException):
 
 class SyncException(VaultException):
     """Raised when bitwarden fails to sync"""
-    pass
-
-
-class TotpException(VaultException):
-    """Raised when retrieving a TOTOP fails"""
     pass
