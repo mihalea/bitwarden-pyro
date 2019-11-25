@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+
+from bitwarden_pyro.util.logger import ProjectLogger
+
 import subprocess as sp
 from subprocess import CalledProcessError
-from bitwarden_pyro.util.logger import BwLogger
 
 
 class Keybind:
@@ -12,7 +14,7 @@ class Keybind:
 
 class Rofi:
     def __init__(self, args):
-        self._logger = BwLogger().get_logger()
+        self._logger = ProjectLogger().get_logger()
         self._keybinds = {}
         self._args = args[1:]
         self._keybinds_code = 10

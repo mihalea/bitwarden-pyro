@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+
+from bitwarden_pyro.util.logger import ProjectLogger
+
 from subprocess import CalledProcessError
 from shutil import which
-from bitwarden_pyro.util.logger import BwLogger
 import subprocess as sp
 import re
 
@@ -16,7 +18,7 @@ class Session:
             if auto_lock is not None else self.DEFAULT_TIMEOUT
         self.key = None
 
-        self._logger = BwLogger().get_logger()
+        self._logger = ProjectLogger().get_logger()
         self.__has_executable()
 
     def __has_executable(self):

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import logging
 from bitwarden_pyro.settings import NAME
+
+import logging
 
 
 class SingletonType(type):
@@ -14,7 +15,7 @@ class SingletonType(type):
         return cls._instances[cls]
 
 
-class BwLogger(object, metaclass=SingletonType):
+class ProjectLogger(object, metaclass=SingletonType):
     _logger = None
 
     def __init__(self, verbose=None):

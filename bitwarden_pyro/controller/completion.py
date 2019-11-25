@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
+from bitwarden_pyro.util.logger import ProjectLogger
+
 from shutil import which
-from bitwarden_pyro.util.logger import BwLogger
 from subprocess import CalledProcessError
 from enum import Enum, auto
 from time import sleep
@@ -49,7 +50,7 @@ class Completion:
         self._tools = None
         self._clear = clear
 
-        self._logger = BwLogger().get_logger()
+        self._logger = ProjectLogger().get_logger()
 
         self._type = self.__init_executable('autotype')
         self._copy = self.__init_executable('copy')

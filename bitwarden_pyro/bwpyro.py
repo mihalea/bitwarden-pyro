@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from bitwarden_pyro.util.logger import BwLogger
+from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.util.arguments import parse_arguments
 from bitwarden_pyro.settings import NAME, VERSION
 from bitwarden_pyro.view.rofi import Rofi
@@ -14,7 +14,7 @@ from time import sleep
 import re
 
 
-class Controller:
+class BwPyro:
     def __init__(self):
         self._rofi = None
         self._completion = None
@@ -22,7 +22,7 @@ class Controller:
         self._vault = None
         self._enter_action = None
         self._args = parse_arguments()
-        self._logger = BwLogger(self._args.verbose).get_logger()
+        self._logger = ProjectLogger(self._args.verbose).get_logger()
 
     def start(self):
         if self._args.version:
@@ -199,5 +199,5 @@ class Controller:
 
 
 def run():
-    controller = Controller()
-    controller.start()
+    bw_pyro = BwPyro()
+    bw_pyro.start()

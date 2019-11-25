@@ -1,8 +1,10 @@
 #!/usr/bin/env python
-import argparse
+
 from bitwarden_pyro.settings import NAME
 from bitwarden_pyro.controller.session import Session
 from bitwarden_pyro.model.actions import ItemActions
+
+import argparse
 from enum import Enum
 
 

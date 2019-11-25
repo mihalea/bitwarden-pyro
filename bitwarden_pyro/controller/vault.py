@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
+from bitwarden_pyro.util.logger import ProjectLogger
+
 from subprocess import CalledProcessError
-from bitwarden_pyro.util.logger import BwLogger
 import subprocess as sp
 import json
 
@@ -11,7 +12,7 @@ class Vault:
         self._items = None
         self._key = None
 
-        self._logger = BwLogger().get_logger()
+        self._logger = ProjectLogger().get_logger()
 
     def set_key(self, key):
         self._key = key
