@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.util.arguments import parse_arguments
 from bitwarden_pyro.settings import NAME, VERSION

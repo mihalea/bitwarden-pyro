@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from bitwarden_pyro.util.logger import ProjectLogger
 
 import subprocess as sp

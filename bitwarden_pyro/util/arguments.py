@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from bitwarden_pyro.settings import NAME
 from bitwarden_pyro.controller.session import Session
 from bitwarden_pyro.model.actions import ItemActions

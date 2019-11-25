@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from bitwarden_pyro.util.logger import ProjectLogger
 
 from subprocess import CalledProcessError
