@@ -3,18 +3,7 @@ import argparse
 from settings import NAME
 from session import Session
 from enum import Enum
-
-
-class EnterAction(Enum):
-    COPY = 'copy'
-    PASSWORD = 'passwd'
-    ALL = 'all'
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return str(self)
+from keybind import KeybindActions
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -58,9 +47,9 @@ def parse_arguments():
         "copy   - copy password to clipboard\n" +
         "all    - auto type username and password\n" +
         "passwd - auto type password\n",
-        choices=list(EnterAction),
-        type=EnterAction,
-        default=EnterAction.COPY
+        choices=list(KeybindActions),
+        type=KeybindActions,
+        default=KeybindActions.COPY
     )
 
     parser.add_argument(

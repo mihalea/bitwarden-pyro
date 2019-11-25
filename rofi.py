@@ -4,9 +4,19 @@ from subprocess import CalledProcessError
 from logger import BwLogger
 
 
+class Keybind:
+    def __init__(self, key, event):
+        self.key = key
+        self.event = event
+
+
 class Rofi:
     def __init__(self):
         self._logger = BwLogger().get_logger()
+        self._keybinds = {}
+
+    def add_keybind(self, action, key, event):
+        self._keybinds[action + 9] = Keybind(key, event)
 
     def get_password(self):
         try:
@@ -29,9 +39,27 @@ class Rofi:
                 "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
             ]
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
-            rofi_proc = sp.check_output(rofi_cmd, stdin=echo_proc.stdout)
+            rofi_proc = sp.run(
+                rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE
+            )
 
-            return rofi_proc.decode("utf-8").strip()
+            rc = rofi_proc.returncode
+            selected = rofi_proc.stdout.decode("utf-8").strip()
+            # Clean exit
+            if rc == 1:
+                return None, None
+            # Selected item by enter
+            elif rc == 0:
+                return selected, None
+            # Selected item using custom keybind
+            elif rc in self._keybinds:
+                return selected, self._keybinds.get(rc).event
+            else:
+                self._logger.warning(
+                    "Unknown return code has been received: %s", rc
+                )
+                return None, None
+
         except CalledProcessError:
             self._logger.info("Login select has been closed")
             return None

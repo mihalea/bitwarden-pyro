@@ -32,7 +32,7 @@ class Completion:
                 'xclip': {
                     Clipboard.GET: 'xclip -selection clipboard -o',
                     Clipboard.SET: 'xclip -selection clipboard -r',
-                    Clipboard.CLEAR: 'echo "" | xclip -selection clipboard -r'
+                    Clipboard.CLEAR: 'echo lul | xclip -selection clipboard -r'
                 },
                 'xsel': {
                     Clipboard.GET: 'xsel --clipboard',
@@ -112,7 +112,7 @@ class Completion:
         try:
             self._logger.debug("Emulating keyboard input for %s", action)
             type_cmd = f"{self._type} {action} {value}"
-            sp.run(type_cmd.split(), check=True)
+            sp.run(type_cmd.split(), check=True, capture_output=True)
         except CalledProcessError as e:
             self._logger.error("Failed to emulate keyboard input")
             raise TypingException from e
