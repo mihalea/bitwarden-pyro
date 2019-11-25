@@ -20,7 +20,6 @@ class BwPyro:
         self._completion = None
         self._session = None
         self._vault = None
-        self._enter_action = None
         self._args = parse_arguments()
         self._logger = ProjectLogger(self._args.verbose).get_logger()
 
@@ -77,12 +76,7 @@ class BwPyro:
         else:
             self._logger.debug("User selected single item")
             selected_item = self._vault.get_by_name(selected_name)
-
-            action = self._enter_action
-            if event is not None:
-                action = event
-
-            return (action, selected_item)
+            return (event, selected_item)
 
     def __show_group_items(self, items):
         name = items[0]['name']
@@ -99,12 +93,7 @@ class BwPyro:
             match = re.search(regex, selected_name)
             selected_index = int(match.group(1)) - 1
             selected_item = items[selected_index]
-
-            action = self._enter_action
-            if event is not None:
-                action = event
-
-            return (action, selected_item)
+            return (event, selected_item)
 
     def __load_items(self):
         try:
@@ -132,7 +121,7 @@ class BwPyro:
         self._logger.info("Application has been launched")
         try:
             self._session = Session(self._args.timeout)
-            self._rofi = Rofi(self._args.rofi_args)
+            self._rofi = Rofi(self._args.rofi_args, self._args.enter)
             self._completion = Completion(self._args.clear)
             self._vault = Vault()
 

@@ -13,11 +13,12 @@ class Keybind:
 
 
 class Rofi:
-    def __init__(self, args):
+    def __init__(self, args, enter_event):
         self._logger = ProjectLogger().get_logger()
         self._keybinds = {}
         self._args = args[1:]
         self._keybinds_code = 10
+        self._enter_event = enter_event
 
         if len(args) > 0:
             self._logger.debug("Setting rofi arguments: %s", self._args)
@@ -80,7 +81,7 @@ class Rofi:
                 return None, None
             # Selected item by enter
             elif rc == 0:
-                return selected, None
+                return selected, self._enter_event
             # Selected item using custom keybind
             elif rc in self._keybinds:
                 return selected, self._keybinds.get(rc).event
