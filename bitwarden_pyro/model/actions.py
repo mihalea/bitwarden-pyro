@@ -19,3 +19,5 @@ class ItemActions(BaseActions):
 class WindowActions(BaseActions):
     SYNC = 'sync'
     SHOW_GROUP = 'group'
+    SHOW_URI = 'show_uri'
+    SHOW_NAMES = 'show_names'

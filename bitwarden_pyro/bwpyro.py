@@ -5,8 +5,9 @@ from bitwarden_pyro.view.rofi import Rofi
 from bitwarden_pyro.controller.session import Session, SessionException
 from bitwarden_pyro.controller.autotype import AutoType, AutoTypeException
 from bitwarden_pyro.controller.clipboard import Clipboard, ClipboardException
-from bitwarden_pyro.controller.vault import Vault, VaultFormatter, VaultException
+from bitwarden_pyro.controller.vault import Vault, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
+from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
 
 from enum import Enum, auto
 from time import sleep
@@ -53,10 +54,11 @@ class BwPyro:
         k = self._session.get_key()
         self._vault.set_key(k)
 
-    def __show_items(self):
+    def __show_items(self, fields=['name']):
         items = self._vault.get_items()
         # Convert items to \n separated strings
-        formatted = VaultFormatter.unique_format(items)
+        converter = ConverterFactory.create(fields)
+        formatted = ItemFormatter.unique_format(items, converter)
         selected_name, event = self._rofi.show_items(formatted)
         self._logger.debug("User selected login: %s", selected_name)
 
@@ -66,10 +68,10 @@ class BwPyro:
             return (None, None)
         # Make sure that the group item isn't a single item where
         # the deduplication marker coincides
-        elif selected_name.startswith(VaultFormatter.DEDUP_MARKER) and \
+        elif selected_name.startswith(ItemFormatter.DEDUP_MARKER) and \
                 len(self._vault.get_by_name(selected_name)) == 0:
             self._logger.debug("User selected item group")
-            group_name = selected_name[len(VaultFormatter.DEDUP_MARKER):]
+            group_name = selected_name[len(ItemFormatter.DEDUP_MARKER):]
             selected_items = self._vault.get_by_name(group_name)
             return (WindowActions.SHOW_GROUP, selected_items)
         # A single item has been selected
@@ -78,9 +80,13 @@ class BwPyro:
             selected_item = self._vault.get_by_name(selected_name)
             return (event, selected_item)
 
-    def __show_group_items(self, items):
+    def __show_group_items(self, items, fields):
+        if items is None:
+            items = self._vault.get_items()
+
         name = items[0]['name']
-        formatted = VaultFormatter.group_format(items)
+        converter = ConverterFactory.create(fields)
+        formatted = ItemFormatter.group_format(items, converter)
         selected_name, event = self._rofi.show_items(formatted, name)
 
         # Rofi has been closed
@@ -131,6 +137,8 @@ class BwPyro:
             self._rofi.add_keybind('Alt+2', ItemActions.ALL)
             self._rofi.add_keybind('Alt+t', ItemActions.TOTP)
             self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
+            self._rofi.add_keybind('Alt+u', WindowActions.SHOW_URI)
+            self._rofi.add_keybind('Alt+n', WindowActions.SHOW_NAMES)
         except (ClipboardException, AutoTypeException,
                 SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
@@ -145,7 +153,18 @@ class BwPyro:
             while action is not None and isinstance(action, WindowActions):
                 # A group of items has been selected
                 if action == WindowActions.SHOW_GROUP:
-                    action, item = self.__show_group_items(item)
+                    action, item = self.__show_group_items(
+                        item,
+                        ['login.username']
+                    )
+                elif action == WindowActions.SHOW_URI:
+                    action, item = self.__show_items(
+                        ['name', 'login.uris.uri']
+                    )
+                elif action == WindowActions.SHOW_NAMES:
+                    action, item = self.__show_items(
+                        ['name']
+                    )
                 elif action == WindowActions.SYNC:
                     self._logger.info("Received SYNC command")
                     self._vault.sync()
