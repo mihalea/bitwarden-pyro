@@ -15,24 +15,42 @@ class Rofi:
         self._logger = BwLogger().get_logger()
         self._keybinds = {}
         self._args = args[1:]
+        self._keybinds_code = 10
 
         if len(args) > 0:
             self._logger.debug("Setting rofi arguments: %s", self._args)
 
-    def add_keybind(self, action, key, event):
-        self._keybinds[action + 9] = Keybind(key, event)
+    def __extend_command(self, command):
+        if len(self._args) > 0:
+            command.extend(self._args)
+
+        for code, keybind in self._keybinds.items():
+            command.extend([
+                f"-kb-custom-{code - 9}",
+                keybind.key
+            ])
+
+        return command
+
+    def add_keybind(self, key, event):
+        if self._keybinds_code == 28:
+            self._logger.warning(
+                "The maximum number of keybinds has been reached"
+            )
+            raise KeybindException
+
+        self._keybinds[self._keybinds_code] = Keybind(key, event)
+        self._keybinds_code += 1
 
     def get_password(self):
         try:
             self._logger.info("Launching rofi password prompt")
-            cmd = [
+            cmd = self.__extend_command([
                 "rofi", "-dmenu", "-p", "Master Password",
                 "-password", "-lines", "0"
-            ]
+            ])
 
-            if len(self._args) > 0:
-                cmd.extend(self._args)
-
+            self._logger.debug("Running command: %s", cmd)
             cp = sp.run(cmd, check=True, capture_output=True)
             return cp.stdout.decode("utf-8").strip()
         except CalledProcessError:
@@ -43,13 +61,11 @@ class Rofi:
         try:
             self._logger.info("Launching rofi login select")
             echo_cmd = ["echo", items]
-            rofi_cmd = [
+            rofi_cmd = self.__extend_command([
                 "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
-            ]
+            ])
 
-            if len(self._args) > 0:
-                rofi_cmd.extend(self._args)
-
+            self._logger.debug("Running command: %s", rofi_cmd)
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.run(
                 rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE
@@ -75,3 +91,13 @@ class Rofi:
         except CalledProcessError:
             self._logger.info("Login select has been closed")
             return None
+
+
+class RofiException(Exception):
+    """Base class for exceptions thrown by Rofi"""
+    pass
+
+
+class KeybindException(Exception):
+    """Raised when no more arguments can be added"""
+    pass

@@ -12,6 +12,16 @@ class Vault:
 
         self._logger = BwLogger().get_logger()
 
+    def sync(self, key):
+        try:
+            self._logger.info("Syncing items with bitwarden")
+
+            sync_cmd = f"bw sync --session {key}"
+            sp.run(sync_cmd.split(), capture_output=True, check=True)
+        except CalledProcessError:
+            self._logger.error("Failed to force a bitwarden sync")
+            raise SyncException
+
     def load_items(self, key):
         try:
             self._logger.info("Loading items from bw")
@@ -23,7 +33,7 @@ class Vault:
 
             return len(self._items)
         except CalledProcessError:
-            self._logger.error("Failed to load vault items")
+            self._logger.error("Failed to load vault items from bitwarde")
             return 0
 
     def get_items(self):
@@ -72,4 +82,9 @@ class VaultException(Exception):
 
 class LoadException(VaultException):
     """Raised when vault fails to load items"""
+    pass
+
+
+class SyncException(VaultException):
+    """Raised when bitwarden fails to sync"""
     pass

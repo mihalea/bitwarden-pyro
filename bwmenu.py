@@ -9,7 +9,7 @@ from completion import Completion, CompletionException
 from vault import Vault, VaultFormatter, VaultException
 from enum import Enum, auto
 from time import sleep
-from keybind import KeybindActions
+from actions import ItemActions, WindowActions
 import re
 
 
@@ -56,7 +56,7 @@ class Controller:
             self._logger.debug("User selected item group")
             group_name = selected_name[len(VaultFormatter.DEDUP_MARKER):]
             selected_items = self._vault.get_by_name(group_name)
-            return (None, selected_items)
+            return (WindowActions.SHOW_GROUP, selected_items)
         # A single item has been selected
         else:
             self._logger.debug("User selected single item")
@@ -89,6 +89,15 @@ class Controller:
                 action = event
 
             return (action, selected_item)
+
+    def __sync_vault(self):
+        try:
+            k = self._session.get_key()
+
+            self._vault.sync(k)
+            self.__load_items()
+        except SessionException:
+            self._logger.error("Failed to sync vault items")
 
     def __load_items(self):
         try:
@@ -124,8 +133,9 @@ class Controller:
             self._vault = Vault()
 
             self._enter_action = self._args.enter
-            self._rofi.add_keybind(1, 'Alt+1', KeybindActions.PASSWORD)
-            self._rofi.add_keybind(2, 'Alt+2', KeybindActions.ALL)
+            self._rofi.add_keybind('Alt+1', ItemActions.PASSWORD)
+            self._rofi.add_keybind('Alt+2', ItemActions.ALL)
+            self._rofi.add_keybind('Alt+r', WindowActions.SYNC)
         except (CompletionException, SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
             exit(1)
@@ -137,27 +147,32 @@ class Controller:
             self.__load_items()
 
             action, item = self.__show_items()
-            if item is not None:
-                # A single item has been selected
-                if action is not None and len(item) == 1:
-                    item = item[0]
+            while action is not None and isinstance(action, WindowActions):
                 # A group of items has been selected
-                elif action is None and len(item) > 1:
+                if action == WindowActions.SHOW_GROUP and len(item) > 1:
                     action, item = self.__show_group_items(item)
+                elif action == WindowActions.SYNC:
+                    self._logger.info("Received SYNC command")
+                    self.__sync_vault()
+                    action, item = self.__show_items()
 
             # Selection has been aborted
             if action == None:
                 self._logger.info("Exiting. Login selection has been aborted")
                 exit(0)
 
-            if action == KeybindActions.COPY:
+            # A single item has been selected
+            if len(item) == 1:
+                item = item[0]
+
+            if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")
                 self._completion.clipboard_set(item['login']['password'])
                 if self._args.clear >= 0:
                     sleep(self._args.clear)
                     self._logger.info("Clearing clipboard")
                     self._completion.clipboard_clear()
-            elif action == KeybindActions.ALL:
+            elif action == ItemActions.ALL:
                 self._logger.info("Auto tying username and password")
                 # Input delay allowing correct window to be focused
                 sleep(1)
@@ -166,7 +181,7 @@ class Controller:
                 self._completion.type_key('Tab')
                 sleep(0.2)
                 self._completion.type_string(item['login']['password'])
-            elif action == KeybindActions.PASSWORD:
+            elif action == ItemActions.PASSWORD:
                 # Input delay allowing correct window to be focused
                 sleep(1)
                 self._logger.info("Auto typing password")

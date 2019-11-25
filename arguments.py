@@ -3,7 +3,7 @@ import argparse
 from settings import NAME
 from session import Session
 from enum import Enum
-from keybind import KeybindActions
+from actions import ItemActions
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -47,9 +47,9 @@ def parse_arguments():
         "copy   - copy password to clipboard\n" +
         "all    - auto type username and password\n" +
         "passwd - auto type password\n",
-        choices=list(KeybindActions),
-        type=KeybindActions,
-        default=KeybindActions.COPY
+        choices=list(ItemActions),
+        type=ItemActions,
+        default=ItemActions.COPY
     )
 
     parser.add_argument(
