@@ -2,6 +2,19 @@
 import argparse
 from settings import NAME
 from session import Session
+from enum import Enum
+
+
+class EnterAction(Enum):
+    COPY = 'copy'
+    PASSWORD = 'passwd'
+    ALL = 'all'
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return str(self)
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -34,10 +47,27 @@ def parse_arguments():
 
     parser.add_argument(
         "-t", "--timeout",
-        help="R|automatically lock the vault in TIMEOUT seconds\n" +
-        "use 0 to lock immediately\n" +
-        "use -1 to disable\n" +
-        f"default: {Session.DEFAULT_TIMEOUT}"
+        help=f"R|automatically lock the vault after TIMEOUT seconds (default: {Session.DEFAULT_TIMEOUT})\n" +
+        "use  0 to lock immediately\n" +
+        "use -1 to disable"
+    )
+
+    parser.add_argument(
+        "-e", "--enter",
+        help="R|action triggered by pressing Enter (default: %(default)s)\n" +
+        "copy   - copy password to clipboard\n" +
+        "all    - auto type username and password\n" +
+        "passwd - auto type password\n",
+        choices=list(EnterAction),
+        type=EnterAction,
+        default=EnterAction.COPY
+    )
+
+    parser.add_argument(
+        "-c", "--clear",
+        help="R|clear the clipboard after CLEAR seconds (default: %(default)s)\n" +
+        "use -1 to disable",
+        default=5
     )
 
     parser.add_argument(

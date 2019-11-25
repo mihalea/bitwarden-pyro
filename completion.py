@@ -3,8 +3,15 @@
 from shutil import which
 from logger import BwLogger
 from subprocess import CalledProcessError
+from enum import Enum, auto
 import subprocess as sp
 import os
+
+
+class Clipboard(Enum):
+    GET = auto()
+    SET = auto()
+    CLEAR = auto()
 
 
 class Completion:
@@ -16,21 +23,21 @@ class Completion:
         'copy': {
             'wayland': {
                 'wl-copy': {
-                    'get': 'wl-paste',
-                    'set': 'wl-copy',
-                    'clr': 'wl-copy --clear'
+                    Clipboard.GET: 'wl-paste',
+                    Clipboard.SET: 'wl-copy',
+                    Clipboard.CLEAR: 'wl-copy --clear'
                 }
             },
             'x11': {
                 'xclip': {
-                    'get': 'xclip -selection clipboard -o',
-                    'set': 'xclip -selection clipboard -r',
-                    'clr': 'echo "" | xclip -selection clipboard -r'
+                    Clipboard.GET: 'xclip -selection clipboard -o',
+                    Clipboard.SET: 'xclip -selection clipboard -r',
+                    Clipboard.CLEAR: 'echo "" | xclip -selection clipboard -r'
                 },
                 'xsel': {
-                    'get': 'xsel --clipboard',
-                    'set': 'xsel --clipboard --input',
-                    'clr': 'xsel --clipboard --delete'
+                    Clipboard.GET: 'xsel --clipboard',
+                    Clipboard.SET: 'xsel --clipboard --input',
+                    Clipboard.CLEAR: 'xsel --clipboard --delete'
                 }}
         }
     }
@@ -46,13 +53,13 @@ class Completion:
         self._copy = self.__init_executable('copy')
 
     def clipboard_get(self):
-        return self.__emulate_clipboard('get')
+        return self.__emulate_clipboard(Clipboard.GET)
 
     def clipboard_set(self, value):
-        self.__emulate_clipboard('set', value)
+        self.__emulate_clipboard(Clipboard.SET, value)
 
     def clipboard_clear(self):
-        self.__emulate_clipboard('clr')
+        self.__emulate_clipboard(Clipboard.CLEAR)
 
     def __emulate_clipboard(self, action, value=None):
         """Interact with the clipboard"""
