@@ -8,12 +8,18 @@ class BaseActions(Enum):
     def __repr__(self):
         return str(self)
 
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.value == other
+        else:
+            return super(BaseActions, self).__eq__(other)
+
 
 class ItemActions(BaseActions):
     COPY = 'copy'
     PASSWORD = 'passwd'
     ALL = 'all'
-    TOTP = 'topt'
+    TOTP = 'totp'
 
 
 class WindowActions(BaseActions):

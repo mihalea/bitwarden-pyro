@@ -1,6 +1,7 @@
 from bitwarden_pyro.settings import NAME
 from bitwarden_pyro.controller.session import Session
 from bitwarden_pyro.model.actions import ItemActions
+from bitwarden_pyro.util.config import ConfigLoader
 
 import argparse
 from enum import Enum
@@ -48,28 +49,40 @@ def parse_arguments():
 
     parser.add_argument(
         "-t", "--timeout",
-        help=f"R|automatically lock the vault after TIMEOUT seconds (default: {Session.DEFAULT_TIMEOUT})\n" +
+        help="R|automatically lock the vault after TIMEOUT seconds" +
+        f" (default: {ConfigLoader.get_default('security', 'timeout')})\n" +
         "use  0 to lock immediately\n" +
         "use -1 to disable"
     )
 
     parser.add_argument(
         "-e", "--enter",
-        help="R|action triggered by pressing Enter (default: %(default)s)\n" +
+        help="R|action triggered by pressing Enter" +
+        f" (default: {ConfigLoader.get_default('keyboard', 'enter')})\n" +
         "copy   - copy password to clipboard\n" +
         "all    - auto type username and password\n" +
         "passwd - auto type password\n" +
         "topt   - copy TOPT to clipboard",
         choices=list(ItemActions),
-        type=ItemActions,
-        default=ItemActions.COPY
+        type=ItemActions
     )
 
     parser.add_argument(
         "-c", "--clear",
-        help="R|clear the clipboard after CLEAR seconds (default: %(default)s)\n" +
-        "use -1 to disable",
-        default=5
+        help="R|clear the clipboard after CLEAR seconds" +
+        f" (default: {ConfigLoader.get_default('security', 'clear')})\n" +
+        "use -1 to disable"
+    )
+
+    parser.add_argument(
+        "--config",
+        help="Use a custom config file path"
+    )
+
+    parser.add_argument(
+        "--no-config",
+        help="Ignore config files and use default values",
+        action="store_true"
     )
 
     parser.add_argument(

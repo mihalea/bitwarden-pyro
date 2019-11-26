@@ -37,8 +37,6 @@ class Notify:
             if self._icon is not None:
                 cmd.extend(['--icon', self._icon])
 
-            print(cmd)
-
             sp.run(cmd, check=True, capture_output=True)
         except CalledProcessError:
             self._logger.error("Failed to send notification message")

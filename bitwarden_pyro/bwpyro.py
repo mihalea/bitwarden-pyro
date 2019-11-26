@@ -9,6 +9,7 @@ from bitwarden_pyro.controller.vault import Vault, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
 from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
 from bitwarden_pyro.util.notify import Notify
+from bitwarden_pyro.util.config import ConfigLoader
 
 from enum import Enum, auto
 from time import sleep
@@ -156,51 +157,42 @@ class BwPyro:
         except SessionException:
             self._logger.error("Failed to load items")
 
+    def __set_keybinds(self):
+        self._enter_action = self._args.enter
+
+        keybinds = {
+            'typepassword': ItemActions.PASSWORD,
+            'typeall':      ItemActions.ALL,
+            'totp':         ItemActions.TOTP,
+            'showuris':     WindowActions.SHOW_URI,
+            'shownames':    WindowActions.SHOW_NAMES,
+            'showlogins':   WindowActions.SHOW_LOGIN,
+            'showfolders':  WindowActions.SHOW_FOLDERS,
+            'sync':         WindowActions.SYNC
+        }
+
+        for name, action in keybinds.items():
+            self._rofi.add_keybind(
+                self._config.get('keyboard', f'{name}_key'),
+                action,
+                self._config.get('keyboard', f'{name}_hint'),
+            )
+
     def __launch_ui(self):
         self._logger.info("Application has been launched")
         try:
-            self._session = Session(self._args.timeout)
+            self._config = ConfigLoader().get_config(self._args)
+            self._session = Session(self._config.getint('security', 'timeout'))
             self._rofi = Rofi(self._args.rofi_args,
-                              self._args.enter,
-                              self._args.hide_mesg)
-            self._clipboard = Clipboard(self._args.clear)
+                              self._config.get('keyboard', 'enter'),
+                              self._config.getboolean('interface', 'hide_mesg'))
+            self._clipboard = Clipboard(
+                self._config.getint('security', 'clear'))
             self._autotype = AutoType()
             self._vault = Vault()
             self._notify = Notify()
 
-            self._enter_action = self._args.enter
-            self._rofi.add_keybind(
-                'Alt+1', ItemActions.PASSWORD,
-                "Type password"
-            )
-            self._rofi.add_keybind(
-                'Alt+2', ItemActions.ALL,
-                "Type all"
-            )
-            self._rofi.add_keybind(
-                'Alt+u', WindowActions.SHOW_URI,
-                "Show uris"
-            )
-            self._rofi.add_keybind(
-                'Alt+n', WindowActions.SHOW_NAMES,
-                "Show names"
-            )
-            self._rofi.add_keybind(
-                'Alt+l', WindowActions.SHOW_LOGIN,
-                "Show logins"
-            )
-            self._rofi.add_keybind(
-                'Alt+c', WindowActions.SHOW_FOLDERS,
-                "Show folders"
-            )
-            self._rofi.add_keybind(
-                'Alt+t', ItemActions.TOTP,
-                "totp"
-            )
-            self._rofi.add_keybind(
-                'Alt+r', WindowActions.SYNC,
-                "sync"
-            )
+            self.__set_keybinds()
         except (ClipboardException, AutoTypeException,
                 SessionException, VaultException):
             self._logger.exception(f"Failed to initialise application")
