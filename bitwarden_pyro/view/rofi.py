@@ -59,16 +59,32 @@ class Rofi:
     def get_password(self):
         try:
             self._logger.info("Launching rofi password prompt")
-            cmd = self.__extend_command([
+            cmd = [
                 "rofi", "-dmenu", "-p", "Master Password",
                 "-password", "-lines", "0"
-            ])
+            ]
+
+            if len(self._args) > 0:
+                cmd.extend(self._args)
 
             cp = sp.run(cmd, check=True, capture_output=True)
             return cp.stdout.decode("utf-8").strip()
         except CalledProcessError:
             self._logger.info("Password prompt has been closed")
             return None
+
+    def show_error(self, message):
+        try:
+            self._logger.info("Showing Rofi error")
+            cmd = ["rofi", "-e", message]
+
+            if len(self._args) > 0:
+                cmd.extend(self._args)
+
+            sp.run(cmd, capture_output=True)
+        except CalledProcessError:
+            self._logger.info("Rofi error failed to display")
+            return RofiException
 
     def show_items(self, items, prompt='Bitwarden'):
         try:
@@ -78,7 +94,6 @@ class Rofi:
                 "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
             ])
 
-            self._logger.debug("Running command: %s", rofi_cmd)
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.run(
                 rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE

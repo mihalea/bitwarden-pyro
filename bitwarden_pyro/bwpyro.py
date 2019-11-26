@@ -8,6 +8,7 @@ from bitwarden_pyro.controller.clipboard import Clipboard, ClipboardException
 from bitwarden_pyro.controller.vault import Vault, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
 from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
+from bitwarden_pyro.util.notify import Notify
 
 from enum import Enum, auto
 from time import sleep
@@ -21,6 +22,7 @@ class BwPyro:
         self._vault = None
         self._clipboard = None
         self._autotype = None
+        self._notify = None
         self._args = parse_arguments()
         self._logger = ProjectLogger(self._args.verbose).get_logger()
 
@@ -39,7 +41,9 @@ class BwPyro:
             self._session = Session()
             self._session.lock()
         except SessionException:
-            pass
+            self._logger.error("Failed to lock session")
+            self._rofi = Rofi(None, None, None)
+            self._rofi.show_error("Failed to lock and delete session")
 
     def __unlock(self, force=False):
         self._logger.info("Unlocking bitwarden vault")
@@ -145,7 +149,10 @@ class BwPyro:
                     "Aborting execution, as second attempt at " +
                     "loading vault items failed"
                 )
+
+                self._rofi.show_error("Failed to load items")
                 exit(0)
+
         except SessionException:
             self._logger.error("Failed to load items")
 
@@ -159,6 +166,7 @@ class BwPyro:
             self._clipboard = Clipboard(self._args.clear)
             self._autotype = AutoType()
             self._vault = Vault()
+            self._notify = Notify()
 
             self._enter_action = self._args.enter
             self._rofi.add_keybind(
@@ -251,9 +259,16 @@ class BwPyro:
 
             if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")
+                self._notify.send(
+                    message="Login password copied to clipboard",
+                    timeout=self._clipboard.clear * 1000  # convert to ms
+                )
                 self._clipboard.set(item['login']['password'])
             elif action == ItemActions.ALL:
                 self._logger.info("Auto tying username and password")
+                self._notify.send(
+                    message="Auto typing username and password"
+                )
                 # Input delay allowing correct window to be focused
                 sleep(1)
                 self._autotype.string(item['login']['username'])
@@ -262,23 +277,34 @@ class BwPyro:
                 sleep(0.2)
                 self._autotype.string(item['login']['password'])
             elif action == ItemActions.PASSWORD:
+                self._logger.info("Auto typing password")
+                self._notify.send(
+                    message="Auto typing password"
+                )
                 # Input delay allowing correct window to be focused
                 sleep(1)
-                self._logger.info("Auto typing password")
                 self._autotype.string(item['login']['password'])
             elif action == ItemActions.TOTP:
                 self._logger.info("Copying TOTP to clipboard")
                 totp = self._vault.get_topt(item['id'])
                 if totp is not None:
+                    self._notify.send(
+                        message="TOTP is copied to the clipboard",
+                        timeout=self._clipboard.clear * 1000  # convert to ms
+                    )
                     self._clipboard.set(totp)
                 else:
                     self._logger.warning(
-                        "Selected item does not provide a TOTP"
+                        "Selected item does not provide TOTP"
+                    )
+                    self._rofi.show_error(
+                        "Selected item does not provide TOTP"
                     )
             else:
                 self._logger.error("Unknown action received: %s", action)
         except (AutoTypeException, ClipboardException,
                 SessionException, VaultException):
+            self._rofi.show_error("An unexpected error has occurred")
             self._logger.error("Application has received a critical error")
 
 

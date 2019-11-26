@@ -37,7 +37,7 @@ class Clipboard:
     }
 
     def __init__(self, clear):
-        self._clear = clear
+        self.clear = clear
         self._exec = Executable.init_executable(self._tools)
         self._logger = ProjectLogger().get_logger()
 
@@ -47,8 +47,8 @@ class Clipboard:
     def set(self, value):
         self.__emulate_clipboard(ClipboardEvents.SET, value)
 
-        if self._clear >= 0:
-            sleep(self._clear)
+        if self.clear >= 0:
+            sleep(self.clear)
             self._logger.info("Clearing clipboard")
             self.__clear()
 
