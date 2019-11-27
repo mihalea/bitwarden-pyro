@@ -4,7 +4,7 @@ from bitwarden_pyro.settings import NAME, VERSION
 setuptools.setup(name='bitwarden_pyro',
                  version=VERSION,
                  description='Bitwarden python interface with Rofi',
-                 url='https://github.com/mihalea/i3expo',
+                 url='https://github.com/mihalea/bitwarden-pyro',
                  author='Mircea Mihalea',
                  author_email='mircea@mihalea.ro',
                  license='MIT',

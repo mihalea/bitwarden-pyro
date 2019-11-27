@@ -156,6 +156,14 @@ class ConfigLoader:
         with open(path, 'w') as f:
             yaml.dump(self._config, f, Dumper=Dumper)
 
+    def dump(self):
+        flat = self.__flatten_config(self._config)
+        lines = []
+        for key, value in flat.items():
+            lines.append(f"{key}={value}")
+
+        return "\n".join(lines)
+
     def get(self, key):
         path = key.split('.')
         option = self._config.get(path[0])
@@ -172,7 +180,6 @@ class ConfigLoader:
 
     def set(self, key, value):
         path = key.split('.')
-        self._logger.debug("Setting config key '%s' to: %s", key, value)
 
         # Test to see if the key is valid
         current = self.get(key)

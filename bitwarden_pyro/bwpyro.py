@@ -1,6 +1,8 @@
 from time import sleep
+
 import re
 import sys
+import logging
 
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.util.arguments import parse_arguments
@@ -38,8 +40,19 @@ class BwPyro:
             exit()
         elif self._args.lock:
             self.__lock()
+        elif self._args.dump_config:
+            self.__dump_config()
         else:
             self.__launch_ui()
+
+    def __dump_config(self):
+        try:
+            self._logger.setLevel(logging.ERROR)
+            self._config = ConfigLoader(self._args)
+            output = self._config.dump()
+            print(output)
+        except ConfigException:
+            self._logger.exception("Failed to dump config")
 
     def __lock(self):
         try:

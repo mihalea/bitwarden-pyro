@@ -84,6 +84,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--dump-config",
+        help="Dump the contents of the config data to stdout",
+        action="store_true"
+    )
+
+    parser.add_argument(
         'rofi_args',
         help=argparse.SUPPRESS,
         nargs=argparse.REMAINDER
