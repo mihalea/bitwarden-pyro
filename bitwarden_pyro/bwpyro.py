@@ -97,7 +97,7 @@ class BwPyro:
             selected_items = self._vault.get_by_name(group_name)
 
             if isinstance(event, ItemActions):
-                event = WindowActions.SHOW_GROUP
+                event = WindowActions.GROUP
 
             return (event, selected_items)
         # A single item has been selected
@@ -106,8 +106,8 @@ class BwPyro:
             selected_item = self._vault.get_by_name(selected_name)
             return (event, selected_item)
 
-    def __show_group_items(self, prompt, items=None, fields=None,
-                           ignore=None):
+    def __show_indexed_items(self, prompt, items=None, fields=None,
+                             ignore=None):
         if items is None:
             items = self._vault.get_items()
 
@@ -146,7 +146,7 @@ class BwPyro:
                 self._vault.set_filter(folder)
 
             if isinstance(event, ItemActions):
-                event = WindowActions.SHOW_NAMES
+                event = WindowActions.NAMES
 
             return (event, None)
 
@@ -164,13 +164,13 @@ class BwPyro:
 
     def __set_keybinds(self):
         keybinds = {
-            'typePassword': ItemActions.PASSWORD,
-            'typeAll':      ItemActions.ALL,
-            'totp':         ItemActions.TOTP,
-            'showURIs':     WindowActions.SHOW_URI,
-            'showNames':    WindowActions.SHOW_NAMES,
-            'showLogins':   WindowActions.SHOW_LOGIN,
-            'showFolders':  WindowActions.SHOW_FOLDERS,
+            'type_password': ItemActions.PASSWORD,
+            'type_all':      ItemActions.ALL,
+            'copy_totp':         ItemActions.TOTP,
+            'mode_uris':     WindowActions.URIS,
+            'mode_names':    WindowActions.NAMES,
+            'mode_logins':   WindowActions.LOGINS,
+            'mode_folders':  WindowActions.FOLDERS,
             'sync':         WindowActions.SYNC
         }
 
@@ -189,7 +189,7 @@ class BwPyro:
             self._session = Session(
                 self._config.get_int('security.timeout'))
             self._rofi = Rofi(self._args.rofi_args,
-                              self._config.get('keyboard.enter'),
+                              self._config.get_itemaction('keyboard.enter'),
                               self._config.get_boolean('interface.hide_mesg'))
             self._clipboard = Clipboard(
                 self._config.get_int('security.clear'))
@@ -207,7 +207,7 @@ class BwPyro:
             self.__unlock()
             self.__load_items()
 
-            action = WindowActions.SHOW_NAMES
+            action = self._config.get_windowaction('interface.window_mode')
             while action is not None and isinstance(action, WindowActions):
                 self._logger.info("Switch window mode to %s", action)
 
@@ -215,25 +215,25 @@ class BwPyro:
                 if self._vault.has_filter():
                     prompt = self._vault.get_filter()['name']
                     # A group of items has been selected
-                if action == WindowActions.SHOW_NAMES:
+                if action == WindowActions.NAMES:
                     action, item = self.__show_items(
                         prompt=prompt
                     )
-                elif action == WindowActions.SHOW_GROUP:
-                    action, item = self.__show_group_items(
+                elif action == WindowActions.GROUP:
+                    action, item = self.__show_indexed_items(
                         prompt=item[0]['name'],
                         items=item,
                         fields=['login.username']
                     )
-                elif action == WindowActions.SHOW_URI:
-                    action, item = self.__show_group_items(
+                elif action == WindowActions.URIS:
+                    action, item = self.__show_indexed_items(
                         prompt=prompt,
                         fields=['login.uris.uri'],
                         ignore=['http://', 'https://', 'None']
                     )
 
-                elif action == WindowActions.SHOW_LOGIN:
-                    action, item = self.__show_group_items(
+                elif action == WindowActions.LOGINS:
+                    action, item = self.__show_indexed_items(
                         prompt=prompt,
                         fields=['name', 'login.username']
                     )
@@ -243,7 +243,7 @@ class BwPyro:
                     action, item = self.__show_items(
                         prompt=prompt
                     )
-                elif action == WindowActions.SHOW_FOLDERS:
+                elif action == WindowActions.FOLDERS:
                     action, item = self.__show_folders(
                         prompt='Folders'
                     )

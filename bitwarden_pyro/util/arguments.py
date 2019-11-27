@@ -90,6 +90,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "-w", "--window-mode",
+        help=f"Set the initial window mode (default: {ConfigLoader.get_default('interface', 'window_mode')})",
+        choices=['uris', 'logins', 'names', 'folders']
+    )
+
+    parser.add_argument(
         'rofi_args',
         help=argparse.SUPPRESS,
         nargs=argparse.REMAINDER

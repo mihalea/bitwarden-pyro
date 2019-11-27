@@ -21,37 +21,37 @@ class ConfigLoader:
         },
         'keyboard': {
             'enter': str(ItemActions.COPY),
-            'typePassword': {
+            'type_password': {
                 'key': 'Alt+1',
                 'hint': 'Type password',
                 'show': True
             },
-            'typeAll': {
+            'type_all': {
                 'key': 'Alt+2',
                 'hint': 'Type all',
                 'show': True
             },
-            'showURIs': {
+            'mode_uris': {
                 'key': 'Alt+u',
                 'hint': 'Show URIs',
                 'show': True
             },
-            'showNames': {
+            'mode_names': {
                 'key': 'Alt+n',
                 'hint': 'Show names',
                 'show': True
             },
-            'showLogins': {
+            'mode_logins': {
                 'key': 'Alt+l',
                 'hint': 'Show logins',
                 'show': True
             },
-            'showFolders': {
+            'mode_folders': {
                 'key': 'Alt+c',
                 'hint': 'Show folders',
                 'show': True
             },
-            'totp': {
+            'copy_totp': {
                 'key': 'Alt+t',
                 'hint': 'totp',
                 'show': True
@@ -64,7 +64,7 @@ class ConfigLoader:
         },
         'interface': {
             'hide_mesg': False,
-            'default_mode': str(WindowActions.SHOW_NAMES)
+            'window_mode': str(WindowActions.NAMES)
         }
     }
 
@@ -75,11 +75,13 @@ class ConfigLoader:
         self._config = None
 
         self.__init_config(args)
-        self.__default_converters()
+        self.__init_converters()
 
-    def __default_converters(self):
+    def __init_converters(self):
         self.add_converter('int', int)
         self.add_converter('boolean', bool)
+        self.add_converter('windowaction', lambda a: WindowActions[a.upper()])
+        self.add_converter('itemaction', lambda a: ItemActions[a.upper()])
 
     def __init_config(self, args):
 
@@ -101,7 +103,9 @@ class ConfigLoader:
         if args.clear is not None:
             self.set('security.clear', args.clear)
         if args.enter is not None:
-            self.set('keyboard.enter', str(args.enter))
+            self.set('keyboard.enter', args.enter)
+        if args.window_mode is not None:
+            self.set('interface.window_mode', args.window_mode)
 
     def __from_file(self, path):
         if path is None:
@@ -189,6 +193,9 @@ class ConfigLoader:
         option = self._config.get(path[0])
         for section in path[1:-1]:
             option = option.get(section)
+
+        if not isinstance(value, str):
+            value = str(value)
 
         option[path[-1]] = value
 
