@@ -23,7 +23,7 @@ class Notify:
         path = pkg_resources.resource_filename(
             'bitwarden_pyro.resources', 'icon.svg'
         )
-        self._logger.info("Using fallback icon: %s", path)
+        self._logger.debug("Using fallback icon: %s", path)
         return path
 
     def send(self, message, title='Bitwarden Pyro', timeout=None):
@@ -39,4 +39,8 @@ class Notify:
 
             sp.run(cmd, check=True, capture_output=True)
         except CalledProcessError:
-            self._logger.error("Failed to send notification message")
+            raise NotifyException("Failed to send notification message")
+
+
+class NotifyException(Exception):
+    """Base exception for errors raised by Notify"""

@@ -1,10 +1,12 @@
 import os
 import yaml
+import collections
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
+
 
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
@@ -19,37 +21,45 @@ class ConfigLoader:
         },
         'keyboard': {
             'enter': str(ItemActions.COPY),
-            'typepassword': {
+            'typePassword': {
                 'key': 'Alt+1',
-                'hint': 'Type password'
+                'hint': 'Type password',
+                'show': True
             },
-            'typeall': {
+            'typeAll': {
                 'key': 'Alt+2',
-                'hint': 'Type all'
+                'hint': 'Type all',
+                'show': True
             },
-            'showuris': {
+            'showURIs': {
                 'key': 'Alt+u',
-                'hint': 'Show URIs'
+                'hint': 'Show URIs',
+                'show': True
             },
-            'shownames': {
+            'showNames': {
                 'key': 'Alt+n',
-                'hint': 'Show names'
+                'hint': 'Show names',
+                'show': True
             },
-            'showlogins': {
+            'showLogins': {
                 'key': 'Alt+l',
-                'hint': 'Show logins'
+                'hint': 'Show logins',
+                'show': True
             },
-            'showfolders': {
+            'showFolders': {
                 'key': 'Alt+c',
-                'hint': 'Show folders'
+                'hint': 'Show folders',
+                'show': True
             },
             'totp': {
                 'key': 'Alt+t',
-                'hint': 'totp'
+                'hint': 'totp',
+                'show': True
             },
             'sync': {
                 'key': 'Alt+r',
-                'hint': 'sync'
+                'hint': 'sync',
+                'show': True
             }
         },
         'interface': {
@@ -80,71 +90,104 @@ class ConfigLoader:
         # set by config file
         if not args.no_config:
             self.__from_file(args.config)
+        else:
+            self._logger.info("Preventing config file from loading")
 
         self.__from_args(args)
 
     def __from_args(self, args):
         if args.timeout is not None:
-            self.set('security', 'timeout', args.timeout)
+            self.set('security.timeout', args.timeout)
         if args.clear is not None:
-            self.set('security', 'clear', args.clear)
+            self.set('security.clear', args.clear)
         if args.enter is not None:
-            self.set('keyboard', 'enter', str(args.enter))
+            self.set('keyboard.enter', str(args.enter))
 
-    def __from_file(self, config):
-        self._logger.info("Loading config from %s", config)
-
-        if config is None:
-            config = self._default_path
+    def __from_file(self, path):
+        if path is None:
+            path = self._default_path
 
         # Resolve to absolute path by either expanding '~' or
         # resolving the relative path
-        if config[0] == '~':
-            config = os.path.expanduser(config)
+        if path[0] == '~':
+            path = os.path.expanduser(path)
         else:
-            config = os.path.abspath(config)
+            path = os.path.abspath(path)
+
+        self._logger.info("Loading config from %s", path)
 
         # If theere is no config file at the location specified
         # create one with default values
-        if not os.path.isfile(config):
-            self.__create_config(config)
+        if not os.path.isfile(path):
+            self.__create_config(path)
         else:
-            with open(config, 'r') as f:
-                self._config = yaml.load(f, Loader=Loader)
+            with open(path, 'r') as yaml_file:
+                config = yaml.load(yaml_file, Loader=Loader)
+                flat = self.__flatten_config(config)
+                self.__insert_file(flat)
 
-    def __create_config(self, config):
+    def __insert_file(self, flat):
+        for key, value in flat.items():
+            self.set(key, value)
+
+    # Source code adaptem from Imran on StackOverflow
+    # https://stackoverflow.com/a/6027615
+    def __flatten_config(self, config, parent_key='', sep='.'):
+        items = []
+        for k, v in config.items():
+            new_key = parent_key + sep + k if parent_key else k
+            if isinstance(v, collections.MutableMapping):
+                items.extend(
+                    self.__flatten_config(
+                        v, new_key, sep=sep
+                    ).items()
+                )
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
+    def __create_config(self, path):
         self._logger.debug("Creating new config from defaults")
 
-        dirname = os.path.dirname(config)
+        dirname = os.path.dirname(path)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        with open(config, 'w') as f:
+        with open(path, 'w') as f:
             yaml.dump(self._config, f, Dumper=Dumper)
 
-    def get(self, section, option):
-        options = self._config.get(section)
-        if options is None:
-            raise ConfigException(f"Section '{section}' could not be found")
+    def get(self, key):
+        path = key.split('.')
+        option = self._config.get(path[0])
+        for idx, section in enumerate(path[1:]):
+            if option is None:
+                missing_path = ".".join(path[:idx])
+                raise ConfigException(
+                    f"Config key {missing_path} could not be found"
+                )
 
-        option = options.get(option)
-        if option is None:
-            raise ConfigException(
-                f"Option '{option}' from section '{section}' could not be found"
-            )
+            option = option.get(section)
 
         return option
 
-    def set(self, section, option, value):
-        options = self._config.get(section)
-        if options is None:
-            raise ConfigException(f"Section '{section}' could not be found")
+    def set(self, key, value):
+        path = key.split('.')
+        self._logger.debug("Setting config key '%s' to: %s", key, value)
 
-        options[option] = value
+        # Test to see if the key is valid
+        current = self.get(key)
+        if current is None:
+            raise ConfigException(f"Config key could not be set '{key}'")
+
+        option = self._config.get(path[0])
+        for section in path[1:-1]:
+            option = option.get(section)
+
+        option[path[-1]] = value
 
     def add_converter(self, name, converter):
-        def getter(self, section, option):
-            raw = self.get(section, option)
+        def getter(self, key):
+            raw = self.get(key)
             return converter(raw)
 
         getter.__name__ = f"get_{name}"

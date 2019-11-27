@@ -13,7 +13,11 @@ from bitwarden_pyro.controller.vault import Vault, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
 from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
 from bitwarden_pyro.util.notify import Notify
-from bitwarden_pyro.util.config import ConfigLoader
+from bitwarden_pyro.util.config import ConfigLoader, ConfigException
+
+
+class FlowException(Exception):
+    """Exceptions raised during the main loop"""
 
 
 class BwPyro:
@@ -43,7 +47,7 @@ class BwPyro:
             self._session = Session()
             self._session.lock()
         except SessionException:
-            self._logger.error("Failed to lock session")
+            self._logger.exception("Failed to lock session")
             self._rofi = Rofi(None, None, None)
             self._rofi.show_error("Failed to lock and delete session")
 
@@ -136,46 +140,33 @@ class BwPyro:
     def __load_items(self):
         try:
             # First attempt at loading items
-            count = self._vault.load_items()
+            self._vault.load_items()
+        except VaultException:
+            self._logger.warning(
+                "First attempt at loading vault items failed"
+            )
 
-            # Second attempt, as key might get invalidated by running bw manually
-            if count == 0:
-                self._logger.warning(
-                    "First attempt at loading vault items failed")
-                self.__unlock(force=True)
-                count = self._vault.load_items()
-
-            # Last attempt failed, abort execution
-            if count == 0:
-                self._logger.error(
-                    "Aborting execution, as second attempt at " +
-                    "loading vault items failed"
-                )
-
-                self._rofi.show_error("Failed to load items")
-                sys.exit(0)
-
-        except SessionException:
-            self._logger.error("Failed to load items")
+            self.__unlock(force=True)
+            self._vault.load_items()
 
     def __set_keybinds(self):
         keybinds = {
-            'typepassword': ItemActions.PASSWORD,
-            'typeall':      ItemActions.ALL,
+            'typePassword': ItemActions.PASSWORD,
+            'typeAll':      ItemActions.ALL,
             'totp':         ItemActions.TOTP,
-            'showuris':     WindowActions.SHOW_URI,
-            'shownames':    WindowActions.SHOW_NAMES,
-            'showlogins':   WindowActions.SHOW_LOGIN,
-            'showfolders':  WindowActions.SHOW_FOLDERS,
+            'showURIs':     WindowActions.SHOW_URI,
+            'showNames':    WindowActions.SHOW_NAMES,
+            'showLogins':   WindowActions.SHOW_LOGIN,
+            'showFolders':  WindowActions.SHOW_FOLDERS,
             'sync':         WindowActions.SYNC
         }
 
         for name, action in keybinds.items():
-            keybind = self._config.get('keyboard', name)
             self._rofi.add_keybind(
-                keybind['key'],
+                self._config.get(f'keyboard.{name}.key'),
                 action,
-                keybind['hint'],
+                self._config.get(f'keyboard.{name}.hint'),
+                self._config.get(f'keyboard.{name}.show'),
             )
 
     def __launch_ui(self):
@@ -183,24 +174,23 @@ class BwPyro:
         try:
             self._config = ConfigLoader(self._args)
             self._session = Session(
-                self._config.get_int('security', 'timeout'))
+                self._config.get_int('security.timeout'))
             self._rofi = Rofi(self._args.rofi_args,
-                              self._config.get('keyboard', 'enter'),
-                              self._config.get_boolean('interface', 'hide_mesg'))
+                              self._config.get('keyboard.enter'),
+                              self._config.get_boolean('interface.hide_mesg'))
             self._clipboard = Clipboard(
-                self._config.get_int('security', 'clear'))
+                self._config.get_int('security.clear'))
             self._autotype = AutoType()
             self._vault = Vault()
             self._notify = Notify()
 
             self.__set_keybinds()
         except (ClipboardException, AutoTypeException,
-                SessionException, VaultException):
-            self._logger.exception(f"Failed to initialise application")
-            exit(1)
+                SessionException, VaultException, ConfigException):
+            self._logger.exception("Failed to initialise application")
+            sys.exit(1)
 
         try:
-
             self.__unlock()
             self.__load_items()
 
@@ -296,9 +286,9 @@ class BwPyro:
             else:
                 self._logger.error("Unknown action received: %s", action)
         except (AutoTypeException, ClipboardException,
-                SessionException, VaultException):
-            self._rofi.show_error("An unexpected error has occurred")
-            self._logger.error("Application has received a critical error")
+                SessionException, VaultException) as exc:
+            self._logger.exception("Application has received a critical error")
+            self._rofi.show_error(f"An unexpected error has occurred. {exc}")
 
 
 def run():

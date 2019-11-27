@@ -59,8 +59,7 @@ class Session:
             bw_cmd = "bw lock"
             sp.run(bw_cmd.split(), check=True, capture_output=True)
         except CalledProcessError:
-            self._logger.exception("Failed to delete key from keyctl")
-            raise LockException
+            raise LockException("Failed to delete key from keyctl")
 
     def unlock(self, password):
         """Unlock bw and store session data in keyctl"""
@@ -88,8 +87,7 @@ class Session:
                 proc = sp.Popen(send_cmd.split(), stdout=sp.PIPE)
                 sp.check_output(padd_cmd.split(), stdin=proc.stdout)
         except CalledProcessError:
-            self._logger.warning("Failed to unlock bitwarden")
-            raise UnlockException
+            raise UnlockException("Failed to unlock bw")
 
     def get_key(self):
         """Return the session key from memory or from keyctl"""
@@ -100,9 +98,11 @@ class Session:
                 self._logger.debug("Force locking vault")
                 self.lock()
 
+            # A key is already in memory
             if self.key is not None:
                 self._logger.debug("Returning key already in memory")
                 return self.key
+            # No key is in memory and storing the session key is allowed
             elif self.auto_lock != 0:
                 keyid = self.__get_keyid()
 
@@ -118,16 +118,13 @@ class Session:
                     self.key = proc.stdout.decode("utf-8").strip()
                     return self.key
                 else:
-                    self._logger.error("Key was not found in keyctl")
-                    raise KeyReadException
+                    raise KeyReadException("Key was not found in keyctl")
             else:
-                self._logger.critical(
-                    "Program is in an unknown state. Exiting..."
+                raise KeyReadException(
+                    "Program is in an unknown state."
                 )
-                raise KeyReadException
         except CalledProcessError:
-            self._logger.error("Failed to retrieve key")
-            raise KeyReadException
+            raise KeyReadException("Failed to retrieve session key")
 
 
 class SessionException(Exception):

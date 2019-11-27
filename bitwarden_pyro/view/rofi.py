@@ -5,10 +5,11 @@ from subprocess import CalledProcessError
 
 
 class Keybind:
-    def __init__(self, key, event, message):
+    def __init__(self, key, event, message, show):
         self.key = key
         self.event = event
         self.message = message
+        self.show = show
 
 
 class Rofi:
@@ -29,9 +30,9 @@ class Rofi:
 
         if not self._hide_mesg:
             mesg = []
-            for kb in self._keybinds.values():
-                if kb.message is not None:
-                    mesg.append(f"<b>{kb.key}</b>: {kb.message}")
+            for keybind in self._keybinds.values():
+                if keybind.message is not None and keybind.show:
+                    mesg.append(f"<b>{keybind.key}</b>: {keybind.message}")
 
             if len(mesg) > 0:
                 command.extend([
@@ -46,14 +47,16 @@ class Rofi:
 
         return command
 
-    def add_keybind(self, key, event, message=None):
+    def add_keybind(self, key, event, message, show):
         if self._keybinds_code == 28:
             self._logger.warning(
                 "The maximum number of keybinds has been reached"
             )
             raise KeybindException
 
-        self._keybinds[self._keybinds_code] = Keybind(key, event, message)
+        self._keybinds[self._keybinds_code] = Keybind(
+            key, event, message, show
+        )
         self._keybinds_code += 1
 
     def get_password(self):
@@ -76,7 +79,7 @@ class Rofi:
     def show_error(self, message):
         try:
             self._logger.info("Showing Rofi error")
-            cmd = ["rofi", "-e", message]
+            cmd = ["rofi", "-e", f"ERROR! {message}"]
 
             if len(self._args) > 0:
                 cmd.extend(self._args)

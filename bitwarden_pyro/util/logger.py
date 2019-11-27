@@ -13,6 +13,23 @@ class SingletonType(type):
         return cls._instances[cls]
 
 
+class NoTraceFormatter(logging.Formatter):
+    def format(self, record):
+        record.message = record.getMessage()
+        if self.usesTime():
+            record.asctime = self.formatTime(record, self.datefmt)
+        s = self.formatMessage(record)
+        if record.exc_info:
+            record.exc_text = f"{record.exc_info[1]} [{record.exc_info[0].__name__}]"
+        if record.exc_text:
+            if record.exc_text[:2] != " - ":
+                record.exc_text = " - " + record.exc_text
+            s = s + record.exc_text
+        if record.stack_info:
+            print(record.stack_info)
+        return s
+
+
 class ProjectLogger(object, metaclass=SingletonType):
     _logger = None
 
@@ -29,17 +46,13 @@ class ProjectLogger(object, metaclass=SingletonType):
             logging.INFO if not verbose else logging.DEBUG)
 
         # create formatter and add it to the handlers
-        console_formatter = None
-        file_formatter = logging.Formatter(
+        file_formatter = NoTraceFormatter(
             '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] - %(message)s'
         )
 
-        if verbose:
-            console_formatter = file_formatter
-        else:
-            console_formatter = logging.Formatter(
-                '%(asctime)s %(levelname)-8s - %(message)s'
-            )
+        console_formatter = NoTraceFormatter(
+            '%(asctime)s %(levelname)-8s - %(message)s'
+        )
 
         file_handler.setFormatter(file_formatter)
         console_handler.setFormatter(console_formatter)

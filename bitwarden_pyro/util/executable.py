@@ -20,11 +20,8 @@ class Executable:
                 else:
                     return t
 
-        # If no valid executable has been found, log and raise
-        logger.critical(
-            "Could not find executable: '%s'", tools
-        )
-        raise NoExecutableException
+        # If no valid executable has been found, raise an error
+        raise NoExecutableException(f"Could not find executable: '{tools}'")
 
     @staticmethod
     def init_executable(tools):
@@ -43,10 +40,9 @@ class Executable:
             if desktop_tools is not None:
                 return Executable.__find_executable(desktop_tools)
             else:
-                logger.critical(
-                    "Desktop session not supported: %s", session_type
+                raise UnsupportedDesktopException(
+                    f"Desktop session not supported: {session_type}"
                 )
-                raise UnsupportedDesktopException
         # If session is not supported, try and make the best
         # guess based on available executables
         else:
@@ -79,10 +75,12 @@ class Executable:
             # running desktop session
             elif len(detected_sessions) > 1:
                 logger.warning(
-                    "Found too many supported executable to be able to make " +
-                    "a guess: %s", detected
+
                 )
-                raise NotDecisiveException
+                raise NotDecisiveException(
+                    "Found too many supported executable to be able to make " +
+                    f"a guess: {detected}"
+                )
 
 
 class ExecutableException(Exception):

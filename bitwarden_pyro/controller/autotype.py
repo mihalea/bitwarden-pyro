@@ -34,8 +34,9 @@ class AutoType:
             type_cmd = f"{self._exec} {action} {value}"
             sp.run(type_cmd.split(), check=True, capture_output=True)
         except CalledProcessError:
-            self._logger.error("Failed to emulate keyboard input")
-            raise AutoTypeException
+            raise AutoTypeException(
+                "Failed to run process emulating keyboard input"
+            )
 
 
 class AutoTypeException(Exception):

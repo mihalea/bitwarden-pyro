@@ -75,20 +75,18 @@ class Clipboard:
 
                 if input_cmd is not None:
                     input_cmd = input_cmd.split(" ", 2)
-                    ep = sp.Popen(input_cmd, stdout=sp.PIPE)
-                    output = sp.Popen(command.split(), stdin=ep.stdout)
+                    echo_proc = sp.Popen(input_cmd, stdout=sp.PIPE)
+                    output = sp.Popen(command.split(), stdin=echo_proc.stdout)
                 else:
                     output = sp.check_output(command.split())
                     return output
 
             else:
-                self._logger.error(
-                    "Action %s is not supported for clipboard", action
+                raise ClipboardException(
+                    f"Action '{action}' not supported by clipboard"
                 )
-                raise ClipboardException
         except CalledProcessError:
-            self._logger.error("Failed to interact with clipboard")
-            raise ClipboardException
+            raise ClipboardException("Failed to execute clipboard executable")
 
 
 class ClipboardException(Exception):

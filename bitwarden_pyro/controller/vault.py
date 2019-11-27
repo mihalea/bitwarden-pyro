@@ -34,8 +34,7 @@ class Vault:
             sync_cmd = f"bw sync --session {self._key}"
             sp.run(sync_cmd.split(), capture_output=True, check=True)
         except CalledProcessError:
-            self._logger.error("Failed to force a bitwarden sync")
-            raise SyncException
+            raise SyncException("Failed to force a bitwarden sync")
 
     def get_topt(self, guid):
         try:
@@ -52,8 +51,7 @@ class Vault:
             else:
                 raise LoadException
         except CalledProcessError:
-            self._logger.error("Failed to retrieve TOTP")
-            raise LoadException
+            raise LoadException("Failed to retrieve TOTP from bw")
 
     def load_items(self):
         try:
@@ -63,11 +61,8 @@ class Vault:
             proc = sp.run(load_cmd.split(), capture_output=True, check=True)
             items_json = proc.stdout.decode("utf-8")
             self._items = json.loads(items_json)
-
-            return len(self._items)
         except CalledProcessError:
-            self._logger.error("Failed to load vault items from bitwarden")
-            return 0
+            raise LoadException("Failed to load vault items from bitwarden")
 
     def get_folders(self):
         try:
@@ -78,8 +73,7 @@ class Vault:
             folders = proc.stdout.decode("utf-8")
             return json.loads(folders)
         except CalledProcessError:
-            self._logger.error("Failed to load vault items from bitwarden")
-            raise LoadException
+            raise LoadException("Failed to load vault items from bitwarden")
 
     def get_items(self):
         if not self._filter:
