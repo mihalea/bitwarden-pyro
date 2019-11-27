@@ -1,10 +1,10 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-
 from subprocess import CalledProcessError
 
 import subprocess as sp
 import os
 import pkg_resources
+
+from bitwarden_pyro.util.logger import ProjectLogger
 
 
 class Notify:

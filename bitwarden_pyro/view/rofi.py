@@ -81,7 +81,7 @@ class Rofi:
             if len(self._args) > 0:
                 cmd.extend(self._args)
 
-            sp.run(cmd, capture_output=True)
+            sp.run(cmd, capture_output=True, check=True)
         except CalledProcessError:
             self._logger.info("Rofi error failed to display")
             return RofiException
@@ -96,7 +96,7 @@ class Rofi:
 
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.run(
-                rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE
+                rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE, check=False
             )
 
             rc = rofi_proc.returncode
@@ -123,9 +123,7 @@ class Rofi:
 
 class RofiException(Exception):
     """Base class for exceptions thrown by Rofi"""
-    pass
 
 
 class KeybindException(Exception):
     """Raised when no more arguments can be added"""
-    pass

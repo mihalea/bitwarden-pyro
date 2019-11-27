@@ -10,7 +10,8 @@ class BaseActions(Enum):
 
     def __eq__(self, other):
         if isinstance(other, str):
-            return self.value == other
+            string = str(self)
+            return string == other
         else:
             return super(BaseActions, self).__eq__(other)
 

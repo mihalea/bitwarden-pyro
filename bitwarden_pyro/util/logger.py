@@ -1,6 +1,6 @@
-from bitwarden_pyro.settings import NAME
-
 import logging
+
+from bitwarden_pyro.settings import NAME
 
 
 class SingletonType(type):
@@ -21,30 +21,31 @@ class ProjectLogger(object, metaclass=SingletonType):
         self._logger.setLevel(logging.DEBUG)
 
         # create file handler which logs even debug messages
-        fh = logging.FileHandler(f'{NAME}.log')
-        fh.setLevel(logging.DEBUG)
+        file_handler = logging.FileHandler(f'{NAME}.log')
+        file_handler.setLevel(logging.DEBUG)
         # create console handler with a higher log level
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO if not verbose else logging.DEBUG)
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(
+            logging.INFO if not verbose else logging.DEBUG)
 
         # create formatter and add it to the handlers
-        consoleFormatter = None
-        fileFormatter = logging.Formatter(
+        console_formatter = None
+        file_formatter = logging.Formatter(
             '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] - %(message)s'
         )
 
         if verbose:
-            consoleFormatter = fileFormatter
+            console_formatter = file_formatter
         else:
-            consoleFormatter = logging.Formatter(
+            console_formatter = logging.Formatter(
                 '%(asctime)s %(levelname)-8s - %(message)s'
             )
 
-        fh.setFormatter(fileFormatter)
-        ch.setFormatter(consoleFormatter)
+        file_handler.setFormatter(file_formatter)
+        console_handler.setFormatter(console_formatter)
         # add the handlers to the logger
-        self._logger.addHandler(fh)
-        self._logger.addHandler(ch)
+        self._logger.addHandler(file_handler)
+        self._logger.addHandler(console_handler)
 
     def get_logger(self):
         return self._logger

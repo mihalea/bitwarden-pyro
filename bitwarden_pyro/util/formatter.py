@@ -36,7 +36,7 @@ class ItemFormatter:
 
 class ConverterFactory:
     @staticmethod
-    def create(fields, ignore=['None'], delim=": ", delim2=","):
+    def create(fields, ignore=None, delim=": ", delim2=","):
         def converter(item):
             values = []
             for f in fields:

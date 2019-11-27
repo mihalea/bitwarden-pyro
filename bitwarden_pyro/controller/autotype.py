@@ -1,12 +1,9 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-from bitwarden_pyro.util.executable import Executable
-
-from shutil import which
 from subprocess import CalledProcessError
-from time import sleep
 
 import subprocess as sp
-import os
+
+from bitwarden_pyro.util.logger import ProjectLogger
+from bitwarden_pyro.util.executable import Executable
 
 
 class AutoType:
@@ -43,4 +40,3 @@ class AutoType:
 
 class AutoTypeException(Exception):
     """Raised when emulating keyboard strings failed"""
-    pass

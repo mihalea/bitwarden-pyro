@@ -1,9 +1,9 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-
 from subprocess import CalledProcessError
 from shutil import which
 import subprocess as sp
 import re
+
+from bitwarden_pyro.util.logger import ProjectLogger
 
 
 class Session:
@@ -29,7 +29,7 @@ class Session:
     def has_key(self):
         """Return true if the key can be retrieved from system
 
-            The key can be retrieved if auto locking is not zero 
+            The key can be retrieved if auto locking is not zero
             or keyctl has the session data registered
         """
         return self.auto_lock != 0 and self.__get_keyid() is not None
@@ -58,9 +58,9 @@ class Session:
 
             bw_cmd = "bw lock"
             sp.run(bw_cmd.split(), check=True, capture_output=True)
-        except CalledProcessError as e:
+        except CalledProcessError:
             self._logger.exception("Failed to delete key from keyctl")
-            raise LockException from e
+            raise LockException
 
     def unlock(self, password):
         """Unlock bw and store session data in keyctl"""
@@ -125,26 +125,22 @@ class Session:
                     "Program is in an unknown state. Exiting..."
                 )
                 raise KeyReadException
-        except CalledProcessError as e:
+        except CalledProcessError:
             self._logger.error("Failed to retrieve key")
-            raise KeyReadException from e
+            raise KeyReadException
 
 
 class SessionException(Exception):
     """Base exception for all errors raised by Session"""
-    pass
 
 
 class LockException(SessionException):
     """Raised when an issue occurs when trying to lock the vault"""
-    pass
 
 
 class UnlockException(SessionException):
     """Raised when an issue occurs when trying to unlock the vault"""
-    pass
 
 
 class KeyReadException(SessionException):
     """Raised when reading the key from keyctl fails"""
-    pass

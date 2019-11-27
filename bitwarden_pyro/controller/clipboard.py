@@ -1,11 +1,11 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-from bitwarden_pyro.util.executable import Executable
-
 import subprocess as sp
 
 from enum import Enum, auto
 from time import sleep
 from subprocess import CalledProcessError
+
+from bitwarden_pyro.util.logger import ProjectLogger
+from bitwarden_pyro.util.executable import Executable
 
 
 class ClipboardEvents(Enum):
@@ -93,4 +93,3 @@ class Clipboard:
 
 class ClipboardException(Exception):
     """Raised when interacting with the clipboard failed"""
-    pass

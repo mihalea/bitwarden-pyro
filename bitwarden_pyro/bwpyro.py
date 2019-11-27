@@ -246,7 +246,7 @@ class BwPyro:
                     )
 
             # Selection has been aborted
-            if action == None:
+            if action is None:
                 self._logger.info("Exiting. Login selection has been aborted")
                 exit(0)
 

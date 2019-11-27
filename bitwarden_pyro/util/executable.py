@@ -1,8 +1,8 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-
 from shutil import which
 
 import os
+
+from bitwarden_pyro.util.logger import ProjectLogger
 
 
 class Executable:
@@ -87,19 +87,15 @@ class Executable:
 
 class ExecutableException(Exception):
     """Base class for all exception originating from Completion"""
-    pass
 
 
 class NoExecutableException(ExecutableException):
     """Raised when no suitable executable can be found"""
-    pass
 
 
 class UnsupportedDesktopException(ExecutableException):
     """Raised when an unsupported desktop exception has been found"""
-    pass
 
 
 class NotDecisiveException(ExecutableException):
     """Raised when no decision upon which executable can be made"""
-    pass

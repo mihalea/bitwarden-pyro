@@ -1,10 +1,8 @@
+import argparse
+
 from bitwarden_pyro.settings import NAME
-from bitwarden_pyro.controller.session import Session
 from bitwarden_pyro.model.actions import ItemActions
 from bitwarden_pyro.util.config import ConfigLoader
-
-import argparse
-from enum import Enum
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -94,5 +92,5 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def usage(name=None):
+def usage():
     return f'''{NAME} [OPTIONS] -- [ROFI OPTIONS]'''
