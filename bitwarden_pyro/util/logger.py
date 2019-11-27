@@ -1,4 +1,7 @@
 import logging
+import os
+
+from logging.handlers import RotatingFileHandler, SysLogHandler
 
 from bitwarden_pyro.settings import NAME
 
@@ -37,13 +40,23 @@ class ProjectLogger(object, metaclass=SingletonType):
         self._logger = logging.getLogger(NAME)
         self._logger.setLevel(logging.DEBUG)
 
+        path = os.path.expanduser(f'~/.cache/{NAME}/{NAME}.log')
+        dirname = os.path.dirname(path)
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+
         # create file handler which logs even debug messages
-        file_handler = logging.FileHandler(f'{NAME}.log')
+        file_handler = RotatingFileHandler(
+            path,
+            maxBytes=1024000,  # 1 MB
+            backupCount=3
+        )
         file_handler.setLevel(logging.DEBUG)
         # create console handler with a higher log level
         console_handler = logging.StreamHandler()
         console_handler.setLevel(
-            logging.INFO if not verbose else logging.DEBUG)
+            logging.INFO if not verbose else logging.DEBUG
+        )
 
         # create formatter and add it to the handlers
         file_formatter = NoTraceFormatter(
