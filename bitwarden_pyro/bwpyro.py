@@ -1,3 +1,7 @@
+from time import sleep
+import re
+import sys
+
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.util.arguments import parse_arguments
 from bitwarden_pyro.settings import NAME, VERSION
@@ -11,10 +15,6 @@ from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
 from bitwarden_pyro.util.notify import Notify
 from bitwarden_pyro.util.config import ConfigLoader
 
-from enum import Enum, auto
-from time import sleep
-import re
-
 
 class BwPyro:
     def __init__(self):
@@ -24,6 +24,7 @@ class BwPyro:
         self._clipboard = None
         self._autotype = None
         self._notify = None
+        self._config = None
         self._args = parse_arguments()
         self._logger = ProjectLogger(self._args.verbose).get_logger()
 
@@ -152,14 +153,12 @@ class BwPyro:
                 )
 
                 self._rofi.show_error("Failed to load items")
-                exit(0)
+                sys.exit(0)
 
         except SessionException:
             self._logger.error("Failed to load items")
 
     def __set_keybinds(self):
-        self._enter_action = self._args.enter
-
         keybinds = {
             'typepassword': ItemActions.PASSWORD,
             'typeall':      ItemActions.ALL,
@@ -172,22 +171,24 @@ class BwPyro:
         }
 
         for name, action in keybinds.items():
+            keybind = self._config.get('keyboard', name)
             self._rofi.add_keybind(
-                self._config.get('keyboard', f'{name}_key'),
+                keybind['key'],
                 action,
-                self._config.get('keyboard', f'{name}_hint'),
+                keybind['hint'],
             )
 
     def __launch_ui(self):
         self._logger.info("Application has been launched")
         try:
-            self._config = ConfigLoader().get_config(self._args)
-            self._session = Session(self._config.getint('security', 'timeout'))
+            self._config = ConfigLoader(self._args)
+            self._session = Session(
+                self._config.get_int('security', 'timeout'))
             self._rofi = Rofi(self._args.rofi_args,
                               self._config.get('keyboard', 'enter'),
-                              self._config.getboolean('interface', 'hide_mesg'))
+                              self._config.get_boolean('interface', 'hide_mesg'))
             self._clipboard = Clipboard(
-                self._config.getint('security', 'clear'))
+                self._config.get_int('security', 'clear'))
             self._autotype = AutoType()
             self._vault = Vault()
             self._notify = Notify()

@@ -1,9 +1,14 @@
+import os
+import yaml
+
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
 from bitwarden_pyro.settings import NAME
-
-import configparser
-import os
 
 
 class ConfigLoader:
@@ -13,58 +18,80 @@ class ConfigLoader:
             'clear': 5      # Clipboard persistency in seconds
         },
         'keyboard': {
-            'enter':                ItemActions.COPY,
-            'typepassword_key':     'Alt+1',
-            'typepassword_hint':    'Type password',
-            'typeall_key':          'Alt+2',
-            'typeall_hint':         'Type all',
-            'showuris_key':         'Alt+u',
-            'showuris_hint':        'Show URIs',
-            'shownames_key':        'Alt+n',
-            'shownames_hint':       'Show names',
-            'showlogins_key':       'Alt+l',
-            'showlogins_hint':      'Show logins',
-            'showfolders_key':      'Alt+c',
-            'showfolders_hint':     'Show folders',
-            'totp_key':             'Alt+t',
-            'totp_hint':            'totp',
-            'sync_key':             'Alt+r',
-            'sync_hint':            'sync'
+            'enter': str(ItemActions.COPY),
+            'typepassword': {
+                'key': 'Alt+1',
+                'hint': 'Type password'
+            },
+            'typeall': {
+                'key': 'Alt+2',
+                'hint': 'Type all'
+            },
+            'showuris': {
+                'key': 'Alt+u',
+                'hint': 'Show URIs'
+            },
+            'shownames': {
+                'key': 'Alt+n',
+                'hint': 'Show names'
+            },
+            'showlogins': {
+                'key': 'Alt+l',
+                'hint': 'Show logins'
+            },
+            'showfolders': {
+                'key': 'Alt+c',
+                'hint': 'Show folders'
+            },
+            'totp': {
+                'key': 'Alt+t',
+                'hint': 'totp'
+            },
+            'sync': {
+                'key': 'Alt+r',
+                'hint': 'sync'
+            }
         },
         'interface': {
             'hide_mesg': False,
-            'default_mode': WindowActions.SHOW_NAMES
+            'default_mode': str(WindowActions.SHOW_NAMES)
         }
     }
 
     _default_path = f'~/.config/{NAME}/config'
 
-    def __init__(self):
+    def __init__(self, args):
         self._logger = ProjectLogger().get_logger()
+        self._config = None
 
-    def get_config(self, args):
-        parser = configparser.SafeConfigParser()
+        self.__init_config(args)
+        self.__default_converters()
 
-        # Read default values from dict
-        parser.read_dict(self._default_values)
+    def __default_converters(self):
+        self.add_converter('int', int)
+        self.add_converter('boolean', bool)
+
+    def __init_config(self, args):
+
+        # Load default values from dict
+        self._config = self._default_values
 
         # Command line arguments ovewrite default values and those
         # set by config file
         if not args.no_config:
-            self.__from_file(parser, args.config)
-        self.__from_args(parser, args)
+            self.__from_file(args.config)
 
-        return parser
+        self.__from_args(args)
 
-    def __from_args(self, parser, args):
+    def __from_args(self, args):
         if args.timeout is not None:
-            parser.set('security', 'timeout', args.timeout)
+            self.set('security', 'timeout', args.timeout)
         if args.clear is not None:
-            parser.set('security', 'clear', args.clear)
+            self.set('security', 'clear', args.clear)
         if args.enter is not None:
-            parser.set('keyboard', 'enter', str(args.enter))
+            self.set('keyboard', 'enter', str(args.enter))
 
-    def __from_file(self, parser, config):
+    def __from_file(self, config):
         self._logger.info("Loading config from %s", config)
 
         if config is None:
@@ -80,11 +107,12 @@ class ConfigLoader:
         # If theere is no config file at the location specified
         # create one with default values
         if not os.path.isfile(config):
-            self.__create_config(parser, config)
+            self.__create_config(config)
         else:
-            parser.read(config)
+            with open(config, 'r') as f:
+                self._config = yaml.load(f, Loader=Loader)
 
-    def __create_config(self, parser, config):
+    def __create_config(self, config):
         self._logger.debug("Creating new config from defaults")
 
         dirname = os.path.dirname(config)
@@ -92,8 +120,40 @@ class ConfigLoader:
             os.makedirs(dirname)
 
         with open(config, 'w') as f:
-            parser.write(f)
+            yaml.dump(self._config, f, Dumper=Dumper)
+
+    def get(self, section, option):
+        options = self._config.get(section)
+        if options is None:
+            raise ConfigException(f"Section '{section}' could not be found")
+
+        option = options.get(option)
+        if option is None:
+            raise ConfigException(
+                f"Option '{option}' from section '{section}' could not be found"
+            )
+
+        return option
+
+    def set(self, section, option, value):
+        options = self._config.get(section)
+        if options is None:
+            raise ConfigException(f"Section '{section}' could not be found")
+
+        options[option] = value
+
+    def add_converter(self, name, converter):
+        def getter(self, section, option):
+            raw = self.get(section, option)
+            return converter(raw)
+
+        getter.__name__ = f"get_{name}"
+        setattr(self.__class__, getter.__name__, getter)
 
     @staticmethod
     def get_default(section, option):
         return ConfigLoader._default_values.get(section).get(option)
+
+
+class ConfigException(Exception):
+    """Base class for exceptions thrown by ConfigLoader"""
