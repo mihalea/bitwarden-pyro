@@ -107,6 +107,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        '--no-logging',
+        help="Disable logging to file",
+        action="store_true"
+    )
+
+    parser.add_argument(
         'rofi_args',
         help=argparse.SUPPRESS,
         nargs=argparse.REMAINDER

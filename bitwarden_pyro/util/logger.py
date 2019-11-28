@@ -41,7 +41,7 @@ class ProjectLogger(metaclass=SingletonType):
 
     _logger = None
 
-    def __init__(self, verbose=None):
+    def __init__(self, verbose=None, file_logging=True):
         self._logger = logging.getLogger(NAME)
         self._logger.setLevel(logging.DEBUG)
 
@@ -50,32 +50,34 @@ class ProjectLogger(metaclass=SingletonType):
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        # create file handler which logs even debug messages
-        file_handler = RotatingFileHandler(
-            path,
-            maxBytes=1024000,  # 1 MB
-            backupCount=3
-        )
-        file_handler.setLevel(logging.DEBUG)
+        if file_logging:
+            # create file handler which logs even debug messages
+            file_handler = RotatingFileHandler(
+                path,
+                maxBytes=1024000,  # 1 MB
+                backupCount=3
+            )
+            file_handler.setLevel(logging.DEBUG)
+
+            # create formatter and add it to the handlers
+            file_formatter = NoTraceFormatter(
+                '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] - %(message)s'
+            )
+
+            file_handler.setFormatter(file_formatter)
+            self._logger.addHandler(file_handler)
+
         # create console handler with a higher log level
         console_handler = logging.StreamHandler()
         console_handler.setLevel(
             logging.INFO if not verbose else logging.DEBUG
         )
 
-        # create formatter and add it to the handlers
-        file_formatter = NoTraceFormatter(
-            '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] - %(message)s'
-        )
-
         console_formatter = NoTraceFormatter(
             '%(asctime)s %(levelname)-8s - %(message)s'
         )
 
-        file_handler.setFormatter(file_formatter)
         console_handler.setFormatter(console_formatter)
-        # add the handlers to the logger
-        self._logger.addHandler(file_handler)
         self._logger.addHandler(console_handler)
 
     def get_logger(self):

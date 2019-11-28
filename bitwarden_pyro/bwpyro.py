@@ -37,7 +37,9 @@ class BwPyro:
         self._notify = None
         self._config = None
         self._args = parse_arguments()
-        self._logger = ProjectLogger(self._args.verbose).get_logger()
+        self._logger = ProjectLogger(
+            self._args.verbose, not self._args.no_logging
+        ).get_logger()
 
     def start(self):
         """Start the execution of the program"""
