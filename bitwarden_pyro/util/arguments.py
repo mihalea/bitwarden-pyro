@@ -91,8 +91,15 @@ def parse_arguments():
 
     parser.add_argument(
         "-w", "--window-mode",
-        help=f"Set the initial window mode (default: {ConfigLoader.get_default('interface', 'window_mode')})",
+        help="Set the initial window mode" +
+        f" (default: {ConfigLoader.get_default('interface', 'window_mode')})",
         choices=['uris', 'logins', 'names', 'folders']
+    )
+
+    parser.add_argument(
+        '--cache',
+        help="Set the time in days it takes for cache to become invalid" +
+        f" (default: {ConfigLoader.get_default('security', 'cache')})"
     )
 
     parser.add_argument(

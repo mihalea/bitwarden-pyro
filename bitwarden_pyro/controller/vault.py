@@ -3,15 +3,20 @@ import subprocess as sp
 import json
 
 from bitwarden_pyro.util.logger import ProjectLogger
+from bitwarden_pyro.controller.cache import Cache
 
 
 class Vault:
-    def __init__(self):
+    def __init__(self, expiry):
         self._items = None
         self._key = None
         self._filter = None
 
+        self._cache = Cache(expiry)
         self._logger = ProjectLogger().get_logger()
+
+    def has_cache(self):
+        return self._cache.has_items()
 
     def set_key(self, key):
         self._logger.debug("Vault key set")
@@ -36,31 +41,43 @@ class Vault:
         except CalledProcessError:
             raise SyncException("Failed to force a bitwarden sync")
 
-    def get_topt(self, guid):
+    def __get_item_property(self, item, field):
         try:
-            self._logger.info("Requesting TOPT from bitwarden")
+            self._logger.info("Requesting %s from bitwarden", field)
 
-            cmd = ['bw', '--session', self._key, 'get', 'totp', guid]
-            proc = sp.run(cmd, capture_output=True, check=False)
+            cmd = ['bw', '--session', self._key, 'get', field, item['id']]
+            proc = sp.run(cmd, capture_output=True, check=True)
 
             output = proc.stdout.decode("utf-8")
-            if proc.returncode == 0:
-                return output
-            elif "No TOTP available for this login" in output:
-                return None
-            else:
-                raise LoadException
+            return output
         except CalledProcessError:
-            raise LoadException("Failed to retrieve TOTP from bw")
+            raise LoadException(f"Failed to retrieve {field} from bw")
 
-    def load_items(self):
+    def get_item_full(self, item):
+        if self._cache.has_items():
+            return json.loads(self.__get_item_property(item, 'item'))
+        else:
+            return item
+
+    def get_item_topt(self, item):
+        return self.__get_item_property(item, 'totp')
+
+    def load_items(self, use_cache=True):
         try:
-            self._logger.info("Loading items from bw")
-            load_cmd = f"bw list items --session {self._key}"
+            if use_cache and self.has_cache():
+                self._logger.info("Loading items from cache")
+                self._items = self._cache.get()
+            else:
+                self._logger.info("Loading items from bw")
+                load_cmd = f"bw list items --session {self._key}"
 
-            proc = sp.run(load_cmd.split(), capture_output=True, check=True)
-            items_json = proc.stdout.decode("utf-8")
-            self._items = json.loads(items_json)
+                proc = sp.run(load_cmd.split(),
+                              capture_output=True, check=True)
+                items_json = proc.stdout.decode("utf-8")
+                self._items = json.loads(items_json)
+
+                if self._cache.should_cache():
+                    self._cache.save(self._items)
         except CalledProcessError:
             raise LoadException("Failed to load vault items from bitwarden")
 

@@ -16,6 +16,7 @@ from bitwarden_pyro.model.actions import ItemActions, WindowActions
 from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
 from bitwarden_pyro.util.notify import Notify
 from bitwarden_pyro.util.config import ConfigLoader, ConfigException
+from bitwarden_pyro.controller.cache import CacheException
 
 
 class FlowException(Exception):
@@ -49,8 +50,8 @@ class BwPyro:
         try:
             self._logger.setLevel(logging.ERROR)
             self._config = ConfigLoader(self._args)
-            output = self._config.dump()
-            print(output)
+            dump = self._config.dump()
+            print(dump)
         except ConfigException:
             self._logger.exception("Failed to dump config")
 
@@ -66,7 +67,7 @@ class BwPyro:
 
     def __unlock(self, force=False):
         self._logger.info("Unlocking bitwarden vault")
-        if not self._session.has_key() or force:
+        if force or not self._session.has_key():
             pwd = self._rofi.get_password()
             if pwd is not None:
                 self._session.unlock(pwd)
@@ -150,17 +151,17 @@ class BwPyro:
 
             return (event, None)
 
-    def __load_items(self):
+    def __load_items(self, use_cache=True):
         try:
             # First attempt at loading items
-            self._vault.load_items()
+            self._vault.load_items(use_cache)
         except VaultException:
             self._logger.warning(
                 "First attempt at loading vault items failed"
             )
 
             self.__unlock(force=True)
-            self._vault.load_items()
+            self._vault.load_items(use_cache)
 
     def __set_keybinds(self):
         keybinds = {
@@ -194,11 +195,11 @@ class BwPyro:
             self._clipboard = Clipboard(
                 self._config.get_int('security.clear'))
             self._autotype = AutoType()
-            self._vault = Vault()
+            self._vault = Vault(self._config.get_int('security.cache'))
             self._notify = Notify()
 
             self.__set_keybinds()
-        except (ClipboardException, AutoTypeException,
+        except (ClipboardException, AutoTypeException, CacheException,
                 SessionException, VaultException, ConfigException):
             self._logger.exception("Failed to initialise application")
             sys.exit(1)
@@ -239,7 +240,7 @@ class BwPyro:
                     )
                 elif action == WindowActions.SYNC:
                     self._vault.sync()
-                    self.__load_items()
+                    self.__load_items(use_cache=False)
                     action, item = self.__show_items(
                         prompt=prompt
                     )
@@ -255,6 +256,8 @@ class BwPyro:
 
             if action == ItemActions.COPY:
                 self._logger.info("Copying password to clipboard")
+                # Get item with password
+                item = self._vault.get_item_full(item)
                 self._notify.send(
                     message="Login password copied to clipboard",
                     timeout=self._clipboard.clear * 1000  # convert to ms
@@ -262,6 +265,8 @@ class BwPyro:
                 self._clipboard.set(item['login']['password'])
             elif action == ItemActions.ALL:
                 self._logger.info("Auto tying username and password")
+                # Get item with password
+                item = self._vault.get_item_full(item)
                 self._notify.send(
                     message="Auto typing username and password"
                 )
@@ -274,6 +279,8 @@ class BwPyro:
                 self._autotype.string(item['login']['password'])
             elif action == ItemActions.PASSWORD:
                 self._logger.info("Auto typing password")
+                # Get item with password
+                item = self._vault.get_item_full(item)
                 self._notify.send(
                     message="Auto typing password"
                 )
@@ -282,26 +289,18 @@ class BwPyro:
                 self._autotype.string(item['login']['password'])
             elif action == ItemActions.TOTP:
                 self._logger.info("Copying TOTP to clipboard")
-                totp = self._vault.get_topt(item['id'])
-                if totp is not None:
-                    self._notify.send(
-                        message="TOTP is copied to the clipboard",
-                        timeout=self._clipboard.clear * 1000  # convert to ms
-                    )
-                    self._clipboard.set(totp)
-                else:
-                    self._logger.warning(
-                        "Selected item does not provide TOTP"
-                    )
-                    self._rofi.show_error(
-                        "Selected item does not provide TOTP"
-                    )
+                totp = self._vault.get_item_topt(item)
+                self._notify.send(
+                    message="TOTP is copied to the clipboard",
+                    timeout=self._clipboard.clear * 1000  # convert to ms
+                )
+                self._clipboard.set(totp)
             else:
                 self._logger.error("Unknown action received: %s", action)
         except (AutoTypeException, ClipboardException,
                 SessionException, VaultException) as exc:
             self._logger.exception("Application has received a critical error")
-            self._rofi.show_error(f"An unexpected error has occurred. {exc}")
+            self._rofi.show_error(f"An error has occurred. {exc}")
 
 
 def run():

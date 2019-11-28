@@ -17,7 +17,8 @@ class ConfigLoader:
     _default_values = {
         'security': {
             'timeout': 900,  # Session expiry in seconds
-            'clear': 5      # Clipboard persistency in seconds
+            'clear': 5,  # Clipboard persistency in seconds
+            'cache': 7
         },
         'keyboard': {
             'enter': str(ItemActions.COPY),
@@ -106,6 +107,8 @@ class ConfigLoader:
             self.set('keyboard.enter', args.enter)
         if args.window_mode is not None:
             self.set('interface.window_mode', args.window_mode)
+        if args.cache is not None:
+            self.set('security.cache', args.cache)
 
     def __from_file(self, path):
         if path is None:
