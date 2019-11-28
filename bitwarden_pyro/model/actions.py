@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class BaseActions(Enum):
+    """Base enum for actions"""
+
     def __str__(self):
         return self.value
 
@@ -10,6 +12,8 @@ class BaseActions(Enum):
 
 
 class ItemActions(BaseActions):
+    """Enum for actions that apply to items"""
+
     COPY = 'copy'
     PASSWORD = 'password'
     ALL = 'all'
@@ -17,6 +21,8 @@ class ItemActions(BaseActions):
 
 
 class WindowActions(BaseActions):
+    """Enum for actions that apply to windows"""
+
     SYNC = 'sync'
     GROUP = 'group'
     URIS = 'uris'

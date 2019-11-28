@@ -3,17 +3,19 @@ from subprocess import CalledProcessError
 import subprocess as sp
 
 from bitwarden_pyro.util.logger import ProjectLogger
-from bitwarden_pyro.util.executable import Executable
+from bitwarden_pyro.util.executable import init_executable
 
 
 class AutoType:
+    """Emulate keyboard and automatically type strings and keys"""
+
     _tools = {
         'x11': ['xdotool'],
         'wayland': ['sudo ydotool']
     }
 
     def __init__(self):
-        self._exec = Executable.init_executable(self._tools)
+        self._exec = init_executable(self._tools)
         self._logger = ProjectLogger().get_logger()
 
     def string(self, string):

@@ -1,12 +1,13 @@
 import logging
 import os
 
-from logging.handlers import RotatingFileHandler, SysLogHandler
+from logging.handlers import RotatingFileHandler
 
 from bitwarden_pyro.settings import NAME
 
 
 class SingletonType(type):
+    """Prevent multiple instances from being created"""
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
@@ -17,23 +18,27 @@ class SingletonType(type):
 
 
 class NoTraceFormatter(logging.Formatter):
+    """Logging formatter with custom error information and no trace stacks"""
+
     def format(self, record):
         record.message = record.getMessage()
         if self.usesTime():
             record.asctime = self.formatTime(record, self.datefmt)
-        s = self.formatMessage(record)
+        string = self.formatMessage(record)
         if record.exc_info:
             record.exc_text = f"{record.exc_info[1]} [{record.exc_info[0].__name__}]"
         if record.exc_text:
             if record.exc_text[:2] != " - ":
                 record.exc_text = " - " + record.exc_text
-            s = s + record.exc_text
+            string = string + record.exc_text
         if record.stack_info:
             print(record.stack_info)
-        return s
+        return string
 
 
-class ProjectLogger(object, metaclass=SingletonType):
+class ProjectLogger(metaclass=SingletonType):
+    """Single logger object handling printing for project"""
+
     _logger = None
 
     def __init__(self, verbose=None):
@@ -74,4 +79,6 @@ class ProjectLogger(object, metaclass=SingletonType):
         self._logger.addHandler(console_handler)
 
     def get_logger(self):
+        """Return the Python logger object"""
+
         return self._logger

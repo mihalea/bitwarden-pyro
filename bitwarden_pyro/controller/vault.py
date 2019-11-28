@@ -7,6 +7,8 @@ from bitwarden_pyro.controller.cache import Cache
 
 
 class Vault:
+    """Load, get and filter items from bitwarden"""
+
     def __init__(self, expiry):
         self._items = None
         self._key = None
@@ -16,23 +18,34 @@ class Vault:
         self._logger = ProjectLogger().get_logger()
 
     def has_cache(self):
+        """Returns true if the cache has any available items"""
+
         return self._cache.has_items()
 
     def set_key(self, key):
+        """Set the session key needed to access bw"""
+
         self._logger.debug("Vault key set")
         self._key = key
 
     def set_filter(self, folder_filter):
+        """Set the folder filter used when getting items"""
+
         self._logger.debug("Vault folder filter set")
         self._filter = folder_filter
 
     def has_filter(self):
+        """Returns true if the folder filter is set"""
+
         return self._filter is not None
 
     def get_filter(self):
+        """Returns the folder filter, or None if not set"""
         return self._filter
 
     def sync(self):
+        """Forces an items sync from bitwarden"""
+
         try:
             self._logger.info("Syncing items with bitwarden")
 
@@ -54,15 +67,19 @@ class Vault:
             raise LoadException(f"Failed to retrieve {field} from bw")
 
     def get_item_full(self, item):
+        """Get a single item's full data directly from bw"""
+
         if self._cache.has_items():
             return json.loads(self.__get_item_property(item, 'item'))
-        else:
-            return item
+
+        return item
 
     def get_item_topt(self, item):
+        """Get a single item's TOTP data from bitwarden"""
         return self.__get_item_property(item, 'totp')
 
     def load_items(self, use_cache=True):
+        """Load item data from bitwarden or cache"""
         try:
             if use_cache and self.has_cache():
                 self._logger.info("Loading items from cache")
@@ -82,6 +99,7 @@ class Vault:
             raise LoadException("Failed to load vault items from bitwarden")
 
     def get_folders(self):
+        """Get all available folders from bw"""
         try:
             self._logger.info("Getting folders from bw")
             cmd = f"bw list folders --session {self._key}"
@@ -93,21 +111,23 @@ class Vault:
             raise LoadException("Failed to load vault items from bitwarden")
 
     def get_items(self):
+        """Get currently loaded items, after applying available filters"""
         if not self._filter:
             return self._items
-        else:
-            return [
-                i for i in self._items
-                if i.get('folderId') is not None
-                and i.get('folderId') == self._filter['id']
-            ]
+
+        return [
+            i for i in self._items
+            if i.get('folderId') is not None
+            and i.get('folderId') == self._filter['id']
+        ]
 
     def get_by_name(self, name):
+        """Get items filtered by name"""
         items = [i for i in self._items if i['name'] == name]
         if len(items) == 1:
             return items[0]
-        else:
-            return items
+
+        return items
 
 
 class VaultException(Exception):

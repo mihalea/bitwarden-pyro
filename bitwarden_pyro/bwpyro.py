@@ -13,7 +13,7 @@ from bitwarden_pyro.controller.autotype import AutoType, AutoTypeException
 from bitwarden_pyro.controller.clipboard import Clipboard, ClipboardException
 from bitwarden_pyro.controller.vault import Vault, VaultException
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
-from bitwarden_pyro.util.formatter import ItemFormatter, ConverterFactory
+from bitwarden_pyro.util.formatter import ItemFormatter, create_converter
 from bitwarden_pyro.util.notify import Notify
 from bitwarden_pyro.util.config import ConfigLoader, ConfigException
 from bitwarden_pyro.controller.cache import CacheException
@@ -24,6 +24,10 @@ class FlowException(Exception):
 
 
 class BwPyro:
+    """
+    Start and control the execution of the program
+    """
+
     def __init__(self):
         self._rofi = None
         self._session = None
@@ -36,9 +40,11 @@ class BwPyro:
         self._logger = ProjectLogger(self._args.verbose).get_logger()
 
     def start(self):
+        """Start the execution of the program"""
+
         if self._args.version:
             print(f"{NAME} v{VERSION}")
-            exit()
+            sys.exit()
         elif self._args.lock:
             self.__lock()
         elif self._args.dump_config:
@@ -73,7 +79,7 @@ class BwPyro:
                 self._session.unlock(pwd)
             else:
                 self._logger.info("Unlocking aborted")
-                exit(0)
+                sys.exit(0)
 
         k = self._session.get_key()
         self._vault.set_key(k)
@@ -91,7 +97,7 @@ class BwPyro:
             return (None, None)
         # Make sure that the group item isn't a single item where
         # the deduplication marker coincides
-        elif selected_name.startswith(ItemFormatter.DEDUP_MARKER) and \
+        if selected_name.startswith(ItemFormatter.DEDUP_MARKER) and \
                 len(self._vault.get_by_name(selected_name)) == 0:
             self._logger.debug("User selected item group")
             group_name = selected_name[len(ItemFormatter.DEDUP_MARKER):]
@@ -101,18 +107,18 @@ class BwPyro:
                 event = WindowActions.GROUP
 
             return (event, selected_items)
+
         # A single item has been selected
-        else:
-            self._logger.debug("User selected single item")
-            selected_item = self._vault.get_by_name(selected_name)
-            return (event, selected_item)
+        self._logger.debug("User selected single item")
+        selected_item = self._vault.get_by_name(selected_name)
+        return (event, selected_item)
 
     def __show_indexed_items(self, prompt, items=None, fields=None,
                              ignore=None):
         if items is None:
             items = self._vault.get_items()
 
-        converter = ConverterFactory.create(fields, ignore)
+        converter = create_converter(fields, ignore)
         indexed, formatted = ItemFormatter.group_format(items, converter)
         selected_name, event = self._rofi.show_items(formatted, prompt)
 
@@ -120,13 +126,13 @@ class BwPyro:
         if selected_name is None:
             self._logger.debug("Group item selection has been aborted")
             return (None, None)
-        # An item has been selected
-        else:
-            regex = r"^#([0-9]+): .*"
-            match = re.search(regex, selected_name)
-            selected_index = int(match.group(1)) - 1
-            selected_item = indexed[selected_index]
-            return (event, selected_item)
+
+    # An item has been selected
+        regex = r"^#([0-9]+): .*"
+        match = re.search(regex, selected_name)
+        selected_index = int(match.group(1)) - 1
+        selected_item = indexed[selected_index]
+        return (event, selected_item)
 
     def __show_folders(self, prompt):
         items = self._vault.get_folders()
@@ -137,19 +143,19 @@ class BwPyro:
         if selected_name is None:
             self._logger.debug("Folder selection has been aborted")
             return (None, None)
+
+        folder = [i for i in items if i['name'] == selected_name][0]
+
+        if folder['name'] == 'No Folder':
+            self._logger.debug("Clearing vault folder filter")
+            self._vault.set_filter(None)
         else:
-            folder = [i for i in items if i['name'] == selected_name][0]
+            self._vault.set_filter(folder)
 
-            if folder['name'] == 'No Folder':
-                self._logger.debug("Clearing vault folder filter")
-                self._vault.set_filter(None)
-            else:
-                self._vault.set_filter(folder)
+        if isinstance(event, ItemActions):
+            event = WindowActions.NAMES
 
-            if isinstance(event, ItemActions):
-                event = WindowActions.NAMES
-
-            return (event, None)
+        return (event, None)
 
     def __load_items(self, use_cache=True):
         try:
@@ -183,8 +189,7 @@ class BwPyro:
                 self._config.get(f'keyboard.{name}.show'),
             )
 
-    def __launch_ui(self):
-        self._logger.info("Application has been launched")
+    def __init_ui(self):
         try:
             self._config = ConfigLoader(self._args)
             self._session = Session(
@@ -204,99 +209,113 @@ class BwPyro:
             self._logger.exception("Failed to initialise application")
             sys.exit(1)
 
+    def __display_windows(self):
+        action = self._config.get_windowaction('interface.window_mode')
+        while action is not None and isinstance(action, WindowActions):
+            self._logger.info("Switch window mode to %s", action)
+
+            prompt = 'Bitwarden'
+            if self._vault.has_filter():
+                prompt = self._vault.get_filter()['name']
+                # A group of items has been selected
+            if action == WindowActions.NAMES:
+                action, item = self.__show_items(
+                    prompt=prompt
+                )
+            elif action == WindowActions.GROUP:
+                action, item = self.__show_indexed_items(
+                    prompt=item[0]['name'],
+                    items=item,
+                    fields=['login.username']
+                )
+            elif action == WindowActions.URIS:
+                action, item = self.__show_indexed_items(
+                    prompt=prompt,
+                    fields=['login.uris.uri'],
+                    ignore=['http://', 'https://', 'None']
+                )
+
+            elif action == WindowActions.LOGINS:
+                action, item = self.__show_indexed_items(
+                    prompt=prompt,
+                    fields=['name', 'login.username']
+                )
+            elif action == WindowActions.SYNC:
+                self._vault.sync()
+                self.__load_items(use_cache=False)
+                action, item = self.__show_items(
+                    prompt=prompt
+                )
+            elif action == WindowActions.FOLDERS:
+                action, item = self.__show_folders(
+                    prompt='Folders'
+                )
+
+        return action, item
+
+    def __execute_action(self, action, item):
+        if action == ItemActions.COPY:
+            self._logger.info("Copying password to clipboard")
+            # Get item with password
+            item = self._vault.get_item_full(item)
+            self._notify.send(
+                message="Login password copied to clipboard",
+                timeout=self._clipboard.clear * 1000  # convert to ms
+            )
+            self._clipboard.set(item['login']['password'])
+        elif action == ItemActions.ALL:
+            self._logger.info("Auto tying username and password")
+            # Get item with password
+            item = self._vault.get_item_full(item)
+            self._notify.send(
+                message="Auto typing username and password"
+            )
+            # Input delay allowing correct window to be focused
+            sleep(1)
+            self._autotype.string(item['login']['username'])
+            sleep(0.2)
+            self._autotype.key('Tab')
+            sleep(0.2)
+            self._autotype.string(item['login']['password'])
+        elif action == ItemActions.PASSWORD:
+            self._logger.info("Auto typing password")
+            # Get item with password
+            item = self._vault.get_item_full(item)
+            self._notify.send(
+                message="Auto typing password"
+            )
+            # Input delay allowing correct window to be focused
+            sleep(1)
+            self._autotype.string(item['login']['password'])
+        elif action == ItemActions.TOTP:
+            self._logger.info("Copying TOTP to clipboard")
+            totp = self._vault.get_item_topt(item)
+            self._notify.send(
+                message="TOTP is copied to the clipboard",
+                timeout=self._clipboard.clear * 1000  # convert to ms
+            )
+            self._clipboard.set(totp)
+        else:
+            self._logger.error("Unknown action received: %s", action)
+
+    def __launch_ui(self):
+        self._logger.info("Application has been launched")
+
+        self.__init_ui()
+
         try:
             self.__unlock()
             self.__load_items()
 
-            action = self._config.get_windowaction('interface.window_mode')
-            while action is not None and isinstance(action, WindowActions):
-                self._logger.info("Switch window mode to %s", action)
-
-                prompt = 'Bitwarden'
-                if self._vault.has_filter():
-                    prompt = self._vault.get_filter()['name']
-                    # A group of items has been selected
-                if action == WindowActions.NAMES:
-                    action, item = self.__show_items(
-                        prompt=prompt
-                    )
-                elif action == WindowActions.GROUP:
-                    action, item = self.__show_indexed_items(
-                        prompt=item[0]['name'],
-                        items=item,
-                        fields=['login.username']
-                    )
-                elif action == WindowActions.URIS:
-                    action, item = self.__show_indexed_items(
-                        prompt=prompt,
-                        fields=['login.uris.uri'],
-                        ignore=['http://', 'https://', 'None']
-                    )
-
-                elif action == WindowActions.LOGINS:
-                    action, item = self.__show_indexed_items(
-                        prompt=prompt,
-                        fields=['name', 'login.username']
-                    )
-                elif action == WindowActions.SYNC:
-                    self._vault.sync()
-                    self.__load_items(use_cache=False)
-                    action, item = self.__show_items(
-                        prompt=prompt
-                    )
-                elif action == WindowActions.FOLDERS:
-                    action, item = self.__show_folders(
-                        prompt='Folders'
-                    )
+            action, item = self.__display_windows()
 
             # Selection has been aborted
             if action is None:
                 self._logger.info("Exiting. Login selection has been aborted")
-                exit(0)
+                sys.exit(0)
 
-            if action == ItemActions.COPY:
-                self._logger.info("Copying password to clipboard")
-                # Get item with password
-                item = self._vault.get_item_full(item)
-                self._notify.send(
-                    message="Login password copied to clipboard",
-                    timeout=self._clipboard.clear * 1000  # convert to ms
-                )
-                self._clipboard.set(item['login']['password'])
-            elif action == ItemActions.ALL:
-                self._logger.info("Auto tying username and password")
-                # Get item with password
-                item = self._vault.get_item_full(item)
-                self._notify.send(
-                    message="Auto typing username and password"
-                )
-                # Input delay allowing correct window to be focused
-                sleep(1)
-                self._autotype.string(item['login']['username'])
-                sleep(0.2)
-                self._autotype.key('Tab')
-                sleep(0.2)
-                self._autotype.string(item['login']['password'])
-            elif action == ItemActions.PASSWORD:
-                self._logger.info("Auto typing password")
-                # Get item with password
-                item = self._vault.get_item_full(item)
-                self._notify.send(
-                    message="Auto typing password"
-                )
-                # Input delay allowing correct window to be focused
-                sleep(1)
-                self._autotype.string(item['login']['password'])
-            elif action == ItemActions.TOTP:
-                self._logger.info("Copying TOTP to clipboard")
-                totp = self._vault.get_item_topt(item)
-                self._notify.send(
-                    message="TOTP is copied to the clipboard",
-                    timeout=self._clipboard.clear * 1000  # convert to ms
-                )
-                self._clipboard.set(totp)
-            else:
-                self._logger.error("Unknown action received: %s", action)
+            self.__execute_action(action, item)
+
         except (AutoTypeException, ClipboardException,
                 SessionException, VaultException) as exc:
             self._logger.exception("Application has received a critical error")
@@ -304,5 +323,7 @@ class BwPyro:
 
 
 def run():
+    """Initialise the program controller"""
+
     bw_pyro = BwPyro()
     bw_pyro.start()

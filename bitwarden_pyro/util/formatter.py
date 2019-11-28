@@ -1,8 +1,12 @@
 class ItemFormatter:
+    """Formatter converting bw item lists to lists of strings for Rofi"""
+
     DEDUP_MARKER = '+ '
 
     @staticmethod
     def unique_format(items):
+        """Return a list of items names, and group duplicates items by name"""
+
         unique = {}
         for item in items:
             arr = unique.get(item['name'], [])
@@ -21,6 +25,10 @@ class ItemFormatter:
 
     @staticmethod
     def group_format(items, converter):
+        """
+        Return a list of numbered items transformed by a converter
+        """
+
         strings = []
         indexed = []
         index = 1
@@ -34,43 +42,42 @@ class ItemFormatter:
         return (indexed, '\n'.join(strings))
 
 
-class ConverterFactory:
-    @staticmethod
-    def create(fields, ignore=None, delim=": ", delim2=","):
-        def converter(item):
-            values = []
-            for f in fields:
-                hierarchy = f.split(".")
-                value = item.get(hierarchy[0])
-                for h in hierarchy[1:]:
-                    if value is None:
-                        break
-                    if isinstance(value, list):
-                        for idx, v in enumerate(value):
-                            value[idx] = v.get(h)
-                    else:
-                        value = value.get(h)
-                        if isinstance(value, list):
-                            value = list(value)
-
+def create_converter(fields, ignore=None, delim=": ", delim2=","):
+    """Return a custm converter based on fields and an ignore list"""
+    def converter(item):
+        values = []
+        for field in fields:
+            hierarchy = field.split(".")
+            value = item.get(hierarchy[0])
+            for level in hierarchy[1:]:
                 if value is None:
-                    value = 'None'
-
-                if ignore is not None:
-                    if isinstance(value, list):
-                        value = [v for v in value if v not in ignore]
-                    elif value.strip() in ignore:
-                        continue
-
+                    break
                 if isinstance(value, list):
-                    if len(value) > 0:
-                        values.append(delim2.join(value))
+                    for idx, elem in enumerate(value):
+                        value[idx] = elem.get(level)
                 else:
-                    values.append(value)
+                    value = value.get(level)
+                    if isinstance(value, list):
+                        value = list(value)
 
-            if len(values) > 0:
-                return delim.join(values)
+            if value is None:
+                value = 'None'
+
+            if ignore is not None:
+                if isinstance(value, list):
+                    value = [elem for elem in value if elem not in ignore]
+                elif value.strip() in ignore:
+                    continue
+
+            if isinstance(value, list):
+                if len(value) > 0:
+                    values.append(delim2.join(value))
             else:
-                return None
+                values.append(value)
 
-        return converter
+        if len(values) <= 0:
+            return None
+
+        return delim.join(values)
+
+    return converter

@@ -7,8 +7,11 @@ from bitwarden_pyro.util.logger import ProjectLogger
 
 
 class Session:
+    """Retrieve and store bitwarden session key using keyctl"""
+
     KEY_NAME = "bw_session"
     DEFAULT_TIMEOUT = 900
+    EXECUTABLE = 'keyctl'
 
     def __init__(self, auto_lock=None):
         # Interval in seconds for locking the vault
@@ -22,9 +25,10 @@ class Session:
     def __has_executable(self):
         """Check whether the 'keyctl' can be found on the system"""
 
-        if which('keyctl') is None:
-            self._logger.error("'keyctl' could not be found on the system")
-            return None
+        if which(self.EXECUTABLE) is None:
+            raise SessionException(
+                f"'{self.EXECUTABLE}' could not be found on the system'"
+            )
 
     def has_key(self):
         """Return true if the key can be retrieved from system
@@ -38,7 +42,7 @@ class Session:
         """Retrieves key id of session data from keyctl"""
         try:
             self._logger.debug("Requesting key id from keyctl")
-            request_cmd = f"keyctl request user {self.KEY_NAME}"
+            request_cmd = f"{self.EXECUTABLE} request user {self.KEY_NAME}"
             proc = sp.run(request_cmd.split(), check=True, capture_output=True)
             keyid = proc.stdout.decode("utf-8").strip()
             return keyid
@@ -53,7 +57,7 @@ class Session:
         """
         try:
             self._logger.info("Deleting key from keyctl and locking bw")
-            keyctl_cmd = f"keyctl purge user {self.KEY_NAME}"
+            keyctl_cmd = f"{self.EXECUTABLE} purge user {self.KEY_NAME}"
             sp.run(keyctl_cmd.split(), check=True, capture_output=True)
 
             bw_cmd = "bw lock"
@@ -83,7 +87,7 @@ class Session:
                 if keyid is not None:
                     self._logger.info("Overwriting old key")
                 send_cmd = f"echo {self.key}"
-                padd_cmd = f"keyctl padd user {self.KEY_NAME} @u"
+                padd_cmd = f"{self.EXECUTABLE} padd user {self.KEY_NAME} @u"
                 proc = sp.Popen(send_cmd.split(), stdout=sp.PIPE)
                 sp.check_output(padd_cmd.split(), stdin=proc.stdout)
         except CalledProcessError:
@@ -102,27 +106,28 @@ class Session:
             if self.key is not None:
                 self._logger.debug("Returning key already in memory")
                 return self.key
+
             # No key is in memory and storing the session key is allowed
-            elif self.auto_lock != 0:
+            if self.auto_lock != 0:
                 keyid = self.__get_keyid()
 
-                if keyid is not None:
-                    self._logger.debug("Retrieving key from keyctl")
-                    refresh_cmd = f"keyctl timeout {keyid} {self.auto_lock}"
-                    sp.run(refresh_cmd.split(), check=True)
-
-                    pipe_cmd = f"keyctl pipe {keyid}"
-                    proc = sp.run(pipe_cmd.split(),
-                                  check=True, capture_output=True)
-
-                    self.key = proc.stdout.decode("utf-8").strip()
-                    return self.key
-                else:
+                if keyid is None:
                     raise KeyReadException("Key was not found in keyctl")
-            else:
-                raise KeyReadException(
-                    "Program is in an unknown state."
-                )
+
+                self._logger.debug("Retrieving key from keyctl")
+                refresh_cmd = f"{self.EXECUTABLE} timeout {keyid} {self.auto_lock}"
+                sp.run(refresh_cmd.split(), check=True)
+
+                pipe_cmd = f"{self.EXECUTABLE} pipe {keyid}"
+                proc = sp.run(pipe_cmd.split(),
+                              check=True, capture_output=True)
+
+                self.key = proc.stdout.decode("utf-8").strip()
+                return self.key
+
+            raise KeyReadException(
+                "Program is in an unknown state."
+            )
         except CalledProcessError:
             raise KeyReadException("Failed to retrieve session key")
 

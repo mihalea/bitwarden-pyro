@@ -6,6 +6,8 @@ from bitwarden_pyro.util.config import ConfigLoader
 
 
 class SmartFormatter(argparse.HelpFormatter):
+    """Custom formatter breaking lines on \n"""
+
     def _split_lines(self, text, width):
         if text.startswith('R|'):
             return text[2:].splitlines()
@@ -14,6 +16,8 @@ class SmartFormatter(argparse.HelpFormatter):
 
 
 def parse_arguments():
+    """Parse command line arguments using argparse"""
+
     parser = argparse.ArgumentParser(
         description="Rofi-based graphical interface for the official "
         + "BitWarden CLI",
@@ -112,4 +116,6 @@ def parse_arguments():
 
 
 def usage():
+    """Custom usage text for help text"""
+
     return f'''{NAME} [OPTIONS] -- [ROFI OPTIONS]'''

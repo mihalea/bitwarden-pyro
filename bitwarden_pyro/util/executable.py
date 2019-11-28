@@ -5,82 +5,77 @@ import os
 from bitwarden_pyro.util.logger import ProjectLogger
 
 
-class Executable:
-    @staticmethod
-    def __find_executable(tools):
-        """Return a single executable installed on the system from the list"""
-        logger = ProjectLogger().get_logger()
+def __find_executable(tools):
+    """Return a single executable installed on the system from the list"""
+    logger = ProjectLogger().get_logger()
 
-        for t in tools:
-            if which(t) is not None:
-                logger.debug("Found valid executable '%s'", t)
+    for tool in tools:
+        if which(tool) is not None:
+            logger.debug("Found valid executable '%s'", tool)
 
-                if isinstance(tools, dict):
-                    return tools.get(t)
-                else:
-                    return t
+            if isinstance(tools, dict):
+                return tools.get(tool)
 
-        # If no valid executable has been found, raise an error
-        raise NoExecutableException(f"Could not find executable: '{tools}'")
+            return tool
 
-    @staticmethod
-    def init_executable(tools):
-        """Find the most appropriate executables based on session type"""
+    # If no valid executable has been found, raise an error
+    raise NoExecutableException(f"Could not find executable: '{tools}'")
 
-        logger = ProjectLogger().get_logger()
 
-        session_type = os.getenv('XDG_SESSION_TYPE')
-        logger.debug("Initialising executable")
+def init_executable(tools):
+    """Find the most appropriate executables based on session type"""
 
-        # If session is a supported one
-        if session_type is not None:
-            logger.debug('Detected session type: %s', session_type)
-            desktop_tools = tools.get(session_type)
-            # If there are tools defined for the current tool_group
-            if desktop_tools is not None:
-                return Executable.__find_executable(desktop_tools)
-            else:
-                raise UnsupportedDesktopException(
-                    f"Desktop session not supported: {session_type}"
-                )
-        # If session is not supported, try and make the best
-        # guess based on available executables
-        else:
-            logger.warning(
-                "Could not read desktop session type from environment, " +
-                "trying to guess based on detected executables"
+    logger = ProjectLogger().get_logger()
+
+    session_type = os.getenv('XDG_SESSION_TYPE')
+    logger.debug("Initialising executable")
+
+    # If session is a supported one
+    if session_type is not None:
+        logger.debug('Detected session type: %s', session_type)
+        desktop_tools = tools.get(session_type)
+        # If there are tools defined for the current tool_group
+        if desktop_tools is None:
+            raise UnsupportedDesktopException(
+                f"Desktop session not supported: {session_type}"
             )
 
-            # List of available executables
-            detected = []
-            for desktop, items in tools.items():
-                for item in items:
-                    if which(item) is not None:
-                        detected.append((desktop, item))
+        return __find_executable(desktop_tools)
+    # If session is not supported, try and make the best
+    # guess based on available executables
 
-            if len(detected) == 0:
-                logger.debug("No supported executables found")
-                return None
+    logger.warning(
+        "Could not read desktop session type from environment, " +
+        "trying to guess based on detected executables"
+    )
 
-            # List of unique desktop sessions for which executables have
-            # been found
-            detected_sessions = set([d[0] for d in detected])
+    # List of available executables
+    detected = []
+    for desktop, items in tools.items():
+        for item in items:
+            if which(item) is not None:
+                detected.append((desktop, item))
 
-            # Available executables are all for the same desktop session
-            if len(detected_sessions) == 1:
-                return Executable.__find_executable([d[1] for d in detected])
+    if len(detected) == 0:
+        logger.debug("No supported executables found")
+        return None
 
-            # If executables are from multiple desktop sessions, the best one
-            # can't be picked automatically, as we can't assume the currently
-            # running desktop session
-            elif len(detected_sessions) > 1:
-                logger.warning(
+    # List of unique desktop sessions for which executables have
+    # been found
+    detected_sessions = {d[0] for d in detected}  # set comprehension
 
-                )
-                raise NotDecisiveException(
-                    "Found too many supported executable to be able to make " +
-                    f"a guess: {detected}"
-                )
+    # Available executables are all for the same desktop session
+    if len(detected_sessions) == 1:
+        return __find_executable([d[1] for d in detected])
+
+    # If executables are from multiple desktop sessions, the best one
+    # can't be picked automatically, as we can't assume the currently
+    # running desktop session
+    # Equivalent to len(detected_sessions) < 0
+    raise NotDecisiveException(
+        "Found too many supported executable to be able to make " +
+        f"a guess: {detected}"
+    )
 
 
 class ExecutableException(Exception):

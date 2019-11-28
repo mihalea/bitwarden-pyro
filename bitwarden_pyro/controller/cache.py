@@ -8,11 +8,15 @@ from bitwarden_pyro.settings import NAME
 
 
 class CacheMetadata:
+    """Model class containing cache metadata"""
+
     def __init__(self, time_created=None, count=None):
         self.time_created = time_created
         self.count = count
 
     def to_dict(self):
+        """Convert the instance to a dict ready to be serialised"""
+
         return {
             'time': self.time_created,
             'count': self.count
@@ -20,6 +24,8 @@ class CacheMetadata:
 
     @staticmethod
     def create(dictionary):
+        """Create an instance of CacheMetadata from a dict"""
+
         return CacheMetadata(
             dictionary['time'],
             dictionary['count']
@@ -27,6 +33,8 @@ class CacheMetadata:
 
 
 class Cache:
+    """Read and write item data to cache files"""
+
     _cache_dir = f'~/.cache/{NAME}/'
     _items_file = 'items.json'
     _meta_file = 'items.metadata'
@@ -70,7 +78,8 @@ class Cache:
             raise CacheException("Failed to initialise cache metadata")
 
     def should_cache(self):
-        return self._expiry >= 0
+        """ Returns true if expiry is a positive number """
+        return self._expiry > 0
 
     def __cache_age(self):
         """Returns the age in days of the saved cache"""
@@ -82,6 +91,8 @@ class Cache:
         return days
 
     def get(self):
+        """Return a collection of cached items"""
+
         try:
             ipath = self.__items_path()
             self._logger.debug("Reading cached items from %s", ipath)
@@ -94,6 +105,8 @@ class Cache:
             raise CacheException(f"Failed to write cache data to {self._path}")
 
     def save(self, items):
+        """Sanitise and save a collection of items to a cache files"""
+
         try:
             self._logger.debug("Writing cache to %s", self._path)
             self._meta = CacheMetadata(time.time(), len(items))
@@ -123,7 +136,9 @@ class Cache:
             raise CacheException(f"Failed to write cache data to {self._path}")
 
     def has_items(self):
-        return self._expiry >= 0 \
+        """Returns true if cache is enabled, not expired and contains items"""
+
+        return self._expiry > 0 \
             and self._meta is not None \
             and self._meta.count > 0 \
             and self.__cache_age() < self._expiry

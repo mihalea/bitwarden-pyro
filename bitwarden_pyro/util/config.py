@@ -1,7 +1,7 @@
 import os
-import yaml
 import collections
 
+import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -14,6 +14,8 @@ from bitwarden_pyro.settings import NAME
 
 
 class ConfigLoader:
+    """Single source of truth for config data, merging default, file and args"""
+
     _default_values = {
         'security': {
             'timeout': 900,  # Session expiry in seconds
@@ -141,16 +143,16 @@ class ConfigLoader:
     # https://stackoverflow.com/a/6027615
     def __flatten_config(self, config, parent_key='', sep='.'):
         items = []
-        for k, v in config.items():
-            new_key = parent_key + sep + k if parent_key else k
-            if isinstance(v, collections.MutableMapping):
+        for key, value in config.items():
+            new_key = parent_key + sep + key if parent_key else key
+            if isinstance(value, collections.MutableMapping):
                 items.extend(
                     self.__flatten_config(
-                        v, new_key, sep=sep
+                        value, new_key, sep=sep
                     ).items()
                 )
             else:
-                items.append((new_key, v))
+                items.append((new_key, value))
         return dict(items)
 
     def __create_config(self, path):
@@ -160,10 +162,12 @@ class ConfigLoader:
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        with open(path, 'w') as f:
-            yaml.dump(self._config, f, Dumper=Dumper)
+        with open(path, 'w') as file:
+            yaml.dump(self._config, file, Dumper=Dumper)
 
     def dump(self):
+        """Flatten and convert to string all config data"""
+
         flat = self.__flatten_config(self._config)
         lines = []
         for key, value in flat.items():
@@ -172,6 +176,8 @@ class ConfigLoader:
         return "\n".join(lines)
 
     def get(self, key):
+        """Retrieve value of a single config key"""
+
         path = key.split('.')
         option = self._config.get(path[0])
         for idx, section in enumerate(path[1:]):
@@ -186,6 +192,8 @@ class ConfigLoader:
         return option
 
     def set(self, key, value):
+        """Set the value of a single config key"""
+
         path = key.split('.')
 
         # Test to see if the key is valid
@@ -203,6 +211,8 @@ class ConfigLoader:
         option[path[-1]] = value
 
     def add_converter(self, name, converter):
+        """Dynamically generate a getter method using a custom converter"""
+
         def getter(self, key):
             raw = self.get(key)
             return converter(raw)
@@ -212,6 +222,8 @@ class ConfigLoader:
 
     @staticmethod
     def get_default(section, option):
+        """Get the default value of a config key"""
+
         return ConfigLoader._default_values.get(section).get(option)
 
 

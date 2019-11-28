@@ -8,6 +8,8 @@ from bitwarden_pyro.util.logger import ProjectLogger
 
 
 class Notify:
+    """Send desktop notifications using notify-send"""
+
     def __init__(self, icons=None):
         self._logger = ProjectLogger().get_logger()
         self._icon = self.__find_icon(icons)
@@ -27,6 +29,8 @@ class Notify:
         return path
 
     def send(self, message, title='Bitwarden Pyro', timeout=None):
+        """Send a dekstop notification"""
+
         try:
             self._logger.debug("Sending desktop notification")
             cmd = ['notify-send', title, message]

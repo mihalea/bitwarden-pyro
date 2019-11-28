@@ -1,18 +1,16 @@
-from bitwarden_pyro.util.logger import ProjectLogger
-
 import subprocess as sp
 from subprocess import CalledProcessError
+from collections import namedtuple
+
+from bitwarden_pyro.util.logger import ProjectLogger
 
 
-class Keybind:
-    def __init__(self, key, event, message, show):
-        self.key = key
-        self.event = event
-        self.message = message
-        self.show = show
+Keybind = namedtuple("Kebind", "key event message show")
 
 
 class Rofi:
+    """Start and retrieve results from Rofi windows"""
+
     def __init__(self, args, enter_event, hide_mesg):
         self._logger = ProjectLogger().get_logger()
         self._keybinds = {}
@@ -48,11 +46,12 @@ class Rofi:
         return command
 
     def add_keybind(self, key, event, message, show):
+        """Create a keybind object and add store it in memory"""
+
         if self._keybinds_code == 28:
-            self._logger.warning(
+            raise KeybindException(
                 "The maximum number of keybinds has been reached"
             )
-            raise KeybindException
 
         self._keybinds[self._keybinds_code] = Keybind(
             key, event, message, show
@@ -60,6 +59,8 @@ class Rofi:
         self._keybinds_code += 1
 
     def get_password(self):
+        """Launch a window requesting a password"""
+
         try:
             self._logger.info("Launching rofi password prompt")
             cmd = [
@@ -70,13 +71,15 @@ class Rofi:
             if len(self._args) > 0:
                 cmd.extend(self._args)
 
-            cp = sp.run(cmd, check=True, capture_output=True)
-            return cp.stdout.decode("utf-8").strip()
+            proc = sp.run(cmd, check=True, capture_output=True)
+            return proc.stdout.decode("utf-8").strip()
         except CalledProcessError:
             self._logger.info("Password prompt has been closed")
             return None
 
     def show_error(self, message):
+        """Launch a window showing an error message"""
+
         try:
             self._logger.info("Showing Rofi error")
             cmd = ["rofi", "-e", f"ERROR! {message}"]
@@ -86,10 +89,11 @@ class Rofi:
 
             sp.run(cmd, capture_output=True, check=True)
         except CalledProcessError:
-            self._logger.info("Rofi error failed to display")
-            return RofiException
+            raise RofiException("Rofi failed to display error message")
 
     def show_items(self, items, prompt='Bitwarden'):
+        """Show a list of items and return the selectem item and action"""
+
         try:
             self._logger.info("Launching rofi login select")
             echo_cmd = ["echo", items]
@@ -102,22 +106,22 @@ class Rofi:
                 rofi_cmd, stdin=echo_proc.stdout, stdout=sp.PIPE, check=False
             )
 
-            rc = rofi_proc.returncode
+            return_code = rofi_proc.returncode
             selected = rofi_proc.stdout.decode("utf-8").strip()
             # Clean exit
-            if rc == 1:
+            if return_code == 1:
                 return None, None
             # Selected item by enter
-            elif rc == 0:
+            if return_code == 0:
                 return selected, self._enter_event
             # Selected item using custom keybind
-            elif rc in self._keybinds:
-                return selected, self._keybinds.get(rc).event
-            else:
-                self._logger.warning(
-                    "Unknown return code has been received: %s", rc
-                )
-                return None, None
+            if return_code in self._keybinds:
+                return selected, self._keybinds.get(return_code).event
+
+            self._logger.warning(
+                "Unknown return code has been received: %s", return_code
+            )
+            return None, None
 
         except CalledProcessError:
             self._logger.info("Login select has been closed")
