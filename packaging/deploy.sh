@@ -18,4 +18,4 @@ git config user.name "mihalea-deploy"
 git commit -m "Release $TRAVIS_TAG"
 
 # Deploy to AUR
-git push origin master
+# git push origin master
