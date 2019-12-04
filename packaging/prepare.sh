@@ -19,5 +19,16 @@ export LIBRARY="$(pwd)/usr/share/makepkg"
 export MAKEPKG_CONF="$(pwd)/etc/makepkg.conf"
 echo "Installed makepkg"
 
+# Package version 
+LATEST_TAG=$(git describe --long | sed -rn 's/^(.*)-.*-.*$/\1/p')
+VERSION=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')
+
+export LATEST_TAG
+export VERSION
+
+echo "VERSION=${VERSION}"
+echo "LATEST_TAG=${LATEST_TAG}"
+echo "TRAVIS_TAG=${TRAVIS_TAG}"
+
 # Set up git to use the private key and skip host checking
 git config --global --add core.sshCommand "ssh -o StrictHostKeyChecking=false -i /tmp/private_key"
