@@ -6,7 +6,7 @@ set -e
 echo ""
 
 # Decrypt private key
-openssl aes-256-cbc -K $encrypted_e4b13d5114eb_key -iv $encrypted_e4b13d5114eb_iv -in package/private_key.enc -out /tmp/private_key -d
+openssl aes-256-cbc -K $encrypted_b11877025bac_key -iv $encrypted_b11877025bac_iv -in packaging/private_key.enc -out /tmp/private_key -d
 chmod 600 /tmp/private_key
 echo "Decrypted and permissioned the deployment key"
 
