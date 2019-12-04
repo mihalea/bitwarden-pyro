@@ -67,11 +67,13 @@ class ConfigLoader:
                 'show': True
             }
         },
+        'autotype': {
+            'select_window': False,
+            'slop_args': '-l -c 0.3,0.4,0.6,0.4 --nodecorations'
+        },
         'interface': {
             'hide_mesg': False,
             'window_mode': str(WindowActions.NAMES),
-            'select_window': False,
-            'slop_args': '-l -c 0.3,0.4,0.6,0.4 --nodecorations'
         }
     }
 
@@ -117,7 +119,7 @@ class ConfigLoader:
             self.set('security.cache', args.cache)
 
         if args.select_window:
-            self.set('interface.select_window', args.select_window)
+            self.set('autotype.select_window', args.select_window)
 
     def __from_file(self, path):
         if path is None:

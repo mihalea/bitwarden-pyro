@@ -207,8 +207,8 @@ class BwPyro:
             self._vault = Vault(self._config.get_int('security.cache'))
             self._notify = Notify()
             self._focus = Focus(
-                self._config.get_boolean('interface.select_window'),
-                self._config.get('interface.slop_args')
+                self._config.get_boolean('autotype.select_window'),
+                self._config.get('autotype.slop_args')
             )
 
             self.__set_keybinds()
