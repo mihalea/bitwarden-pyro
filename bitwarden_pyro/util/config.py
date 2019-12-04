@@ -69,7 +69,9 @@ class ConfigLoader:
         },
         'interface': {
             'hide_mesg': False,
-            'window_mode': str(WindowActions.NAMES)
+            'window_mode': str(WindowActions.NAMES),
+            'select_window': False,
+            'slop_args': '-l -c 0.3,0.4,0.6,0.4 --nodecorations'
         }
     }
 
@@ -84,7 +86,7 @@ class ConfigLoader:
 
     def __init_converters(self):
         self.add_converter('int', int)
-        self.add_converter('boolean', bool)
+        self.add_converter('boolean', lambda t: str(t).lower() == "true")
         self.add_converter('windowaction', lambda a: WindowActions[a.upper()])
         self.add_converter('itemaction', lambda a: ItemActions[a.upper()])
 
@@ -113,6 +115,9 @@ class ConfigLoader:
             self.set('interface.window_mode', args.window_mode)
         if args.cache is not None:
             self.set('security.cache', args.cache)
+
+        if args.select_window:
+            self.set('interface.select_window', args.select_window)
 
     def __from_file(self, path):
         if path is None:
