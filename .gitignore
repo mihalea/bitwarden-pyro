@@ -2,3 +2,4 @@
 *.log
 *.egg-info
 config
+packaging/bitwarden-pyro*

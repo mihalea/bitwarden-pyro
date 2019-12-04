@@ -26,12 +26,6 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--version",
-        help="show version information and exit",
-        action="store_true"
-    )
-
-    parser.add_argument(
         '-v', '--verbose',
         help="increase verbosity level",
         action='store_true',
@@ -47,6 +41,48 @@ def parse_arguments():
         "--hide-mesg",
         help="Hide message explaining keybinds",
         action="store_true"
+    )
+
+    parser.add_argument(
+        "--version",
+        help="show version information and exit",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        "--no-config",
+        help="Ignore config files and use default values",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        "--dump-config",
+        help="Dump the contents of the config data to stdout",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        '--no-logging',
+        help="Disable logging to file",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        "--config",
+        help="Use a custom config file path"
+    )
+
+    parser.add_argument(
+        '--cache',
+        help="Set the time in days it takes for cache to become invalid" +
+        f" (default: {ConfigLoader.get_default('security', 'cache')})"
+    )
+
+    parser.add_argument(
+        "-c", "--clear",
+        help="R|clear the clipboard after CLEAR seconds" +
+        f" (default: {ConfigLoader.get_default('security', 'clear')})\n" +
+        "use -1 to disable"
     )
 
     parser.add_argument(
@@ -70,46 +106,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-c", "--clear",
-        help="R|clear the clipboard after CLEAR seconds" +
-        f" (default: {ConfigLoader.get_default('security', 'clear')})\n" +
-        "use -1 to disable"
-    )
-
-    parser.add_argument(
-        "--config",
-        help="Use a custom config file path"
-    )
-
-    parser.add_argument(
-        "--no-config",
-        help="Ignore config files and use default values",
-        action="store_true"
-    )
-
-    parser.add_argument(
-        "--dump-config",
-        help="Dump the contents of the config data to stdout",
-        action="store_true"
-    )
-
-    parser.add_argument(
         "-w", "--window-mode",
         help="Set the initial window mode" +
         f" (default: {ConfigLoader.get_default('interface', 'window_mode')})",
         choices=['uris', 'logins', 'names', 'folders']
-    )
-
-    parser.add_argument(
-        '--cache',
-        help="Set the time in days it takes for cache to become invalid" +
-        f" (default: {ConfigLoader.get_default('security', 'cache')})"
-    )
-
-    parser.add_argument(
-        '--no-logging',
-        help="Disable logging to file",
-        action="store_true"
     )
 
     parser.add_argument(

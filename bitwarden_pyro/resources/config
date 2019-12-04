@@ -1,0 +1,51 @@
+interface:
+  # Hide keybind help message
+  hide_mesg: false
+  # Default window mode
+  # Available options: uris, logins, names, folders
+  window_mode: names
+keyboard:
+  # Keybind settings for all available actions and modes
+  # - hint: Contents of the text parts of the help message
+  # - key:  Keybind triggering the action
+  # - show: Whether to include it in the help message or not
+  copy_totp:
+    hint: totp
+    key: Alt+t
+    show: true
+  enter: copy
+  mode_folders:
+    hint: Show folders
+    key: Alt+c
+    show: true
+  mode_logins:
+    hint: Show logins
+    key: Alt+l
+    show: true
+  mode_names:
+    hint: Show names
+    key: Alt+n
+    show: true
+  mode_uris:
+    hint: Show URIs
+    key: Alt+u
+    show: true
+  sync:
+    hint: sync
+    key: Alt+r
+    show: true
+  type_all:
+    hint: Type all
+    key: Alt+2
+    show: true
+  type_password:
+    hint: Type password
+    key: Alt+1
+    show: true
+security:
+  # Time in days after which the item cache is set to expire
+  cache: 7
+  # Time in seconds after which the clipboard will be cleared
+  clear: 5
+  # Time in seconds after which the keyctl session data will be deleted
+  timeout: 900

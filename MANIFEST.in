@@ -1,1 +1,1 @@
-include bitwarden_pyro/resources/icon.svg
+include bitwarden_pyro/resources/*

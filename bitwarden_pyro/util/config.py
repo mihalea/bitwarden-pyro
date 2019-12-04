@@ -1,5 +1,6 @@
 import os
 import collections
+import pkg_resources
 
 import yaml
 try:
@@ -7,6 +8,7 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+from shutil import copy
 
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.model.actions import ItemActions, WindowActions
@@ -128,7 +130,7 @@ class ConfigLoader:
         # If theere is no config file at the location specified
         # create one with default values
         if not os.path.isfile(path):
-            self.__create_config(path)
+            self.__copy_config(path)
         else:
             with open(path, 'r') as yaml_file:
                 config = yaml.load(yaml_file, Loader=Loader)
@@ -139,7 +141,7 @@ class ConfigLoader:
         for key, value in flat.items():
             self.set(key, value)
 
-    # Source code adaptem from Imran on StackOverflow
+    # Source code adapted from Imran on StackOverflow
     # https://stackoverflow.com/a/6027615
     def __flatten_config(self, config, parent_key='', sep='.'):
         items = []
@@ -155,7 +157,19 @@ class ConfigLoader:
                 items.append((new_key, value))
         return dict(items)
 
+    def __copy_config(self, path):
+        try:
+            source = pkg_resources.resource_filename(
+                'bitwarden_pyro.resources', 'config'
+            )
+
+            copy(source, path)
+        except IOError:
+            raise ConfigException("Failed to copy default config")
+
     def __create_config(self, path):
+        """DEPRECATED! Use __copy_config instead"""
+
         self._logger.debug("Creating new config from defaults")
 
         dirname = os.path.dirname(path)
