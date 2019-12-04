@@ -1,4 +1,9 @@
-# bitwarden-pyro
+# bitwarden-pyro 
+![travis-build](https://img.shields.io/travis/com/mihalea/bitwarden-pyro?style=flat-square)
+![license](https://img.shields.io/github/license/mihalea/bitwarden-pyro?color=blue&style=flat-square)
+![aur-version](https://img.shields.io/aur/version/bitwarden-pyro-git?style=flat-square)
+![pypi-version](https://img.shields.io/pypi/v/bitwarden-pyro?style=flat-square)
+
 `bwpyro` is a Bitwarden python interface built on Rofi, allowing for fast selection and insertion of passwords.
 
 ## Usage
