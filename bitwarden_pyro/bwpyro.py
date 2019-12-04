@@ -17,6 +17,7 @@ from bitwarden_pyro.util.formatter import ItemFormatter, create_converter
 from bitwarden_pyro.util.notify import Notify
 from bitwarden_pyro.util.config import ConfigLoader, ConfigException
 from bitwarden_pyro.controller.cache import CacheException
+from bitwarden_pyro.controller.focus import Focus, FocusException
 
 
 class FlowException(Exception):
@@ -36,6 +37,7 @@ class BwPyro:
         self._autotype = None
         self._notify = None
         self._config = None
+        self._focus = None
         self._args = parse_arguments()
         self._logger = ProjectLogger(
             self._args.verbose, not self._args.no_logging
@@ -204,6 +206,10 @@ class BwPyro:
             self._autotype = AutoType()
             self._vault = Vault(self._config.get_int('security.cache'))
             self._notify = Notify()
+            self._focus = Focus(
+                self._config.get_boolean('autotype.select_window'),
+                self._config.get('autotype.slop_args')
+            )
 
             self.__set_keybinds()
         except (ClipboardException, AutoTypeException, CacheException,
@@ -255,6 +261,16 @@ class BwPyro:
 
         return action, item
 
+    def __delay_type(self):
+        # Delay typing, allowing correct window to be focused
+        if self._focus.is_enabled():
+            okay = self._focus.select_window()
+            if not okay:
+                self._logger.warning("Focus has been cancelled")
+                sys.exit(0)
+        else:
+            sleep(1)
+
     def __execute_action(self, action, item):
         if action == ItemActions.COPY:
             self._logger.info("Copying password to clipboard")
@@ -269,11 +285,12 @@ class BwPyro:
             self._logger.info("Auto tying username and password")
             # Get item with password
             item = self._vault.get_item_full(item)
+
+            self.__delay_type()
+
             self._notify.send(
                 message="Auto typing username and password"
             )
-            # Input delay allowing correct window to be focused
-            sleep(1)
             self._autotype.string(item['login']['username'])
             sleep(0.2)
             self._autotype.key('Tab')
@@ -286,8 +303,9 @@ class BwPyro:
             self._notify.send(
                 message="Auto typing password"
             )
-            # Input delay allowing correct window to be focused
-            sleep(1)
+
+            self.__delay_type()
+
             self._autotype.string(item['login']['password'])
         elif action == ItemActions.TOTP:
             self._logger.info("Copying TOTP to clipboard")
@@ -319,7 +337,7 @@ class BwPyro:
             self.__execute_action(action, item)
 
         except (AutoTypeException, ClipboardException,
-                SessionException, VaultException) as exc:
+                SessionException, VaultException, FocusException) as exc:
             self._logger.exception("Application has received a critical error")
             self._rofi.show_error(f"An error has occurred. {exc}")
 

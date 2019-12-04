@@ -11,7 +11,9 @@ optdepends=('xdotool: Provide auto typing for X11'
 						'ydotool-git: Provide auto typing for Wayland'
 						'xclip: Provide clipboard interaction with X11'
 						'xset: Alternative for clipoard interaction with X11'
-						'wl-clipboard: Provide clipboard interaction with Wayland')
+						'wl-clipboard: Provide clipboard interaction with Wayland'
+                        'slop: Provide window selection for auto typing'
+                        'wmctrl: Provide window focusing for auto typing')
 license=('MIT')
 arch=('any')
 provides=('bwpyro')
