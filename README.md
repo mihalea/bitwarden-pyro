@@ -63,7 +63,7 @@ $ bwpyro --timeout 0
 
 A local item cache can be used to prevent the whole item collection from being decrypted every time. Items are decrypted, stripped of passwords and TOTP data, and stored on disk in a file with permissions set to `0600`. The cache will the used to display items, and only after a selection is made, an individual item will be decrypted using `bw`. 
 
-An expiration interval can be set, which will force the application to sync the item data. By default it is set to 1 day.
+An expiration interval can be set, which will force the application to sync the item data. By default it is set to 7 days.
 
 The directory where the item cache is stored is `~/.cache/bwpyro/`.
 
@@ -113,6 +113,9 @@ The program expects the configuration file to be present in `~/.config/bwpyro/co
 ### Section: autotype
 - `autotype.select_window`: Whether to show the window picker before the autotyping procedure
 - `autotype.slop_args`: Arguments used to launch slop as window picker used to style the selection
+- `autotype.start_delay`: Time delay in seconds before starting the autotype procedure, allowing the window manager to refocus the window
+- `autotype.tab_delay`: Time delay in seconds before and after the Tab key, when auto typing both username and password
+- `autotype.delay_notification`: Show notification letting the user know the value of autotype.start_delay, before starting the delay
   
 ### Section: keyboard
 - `keyboard.{action}`: Keybind settings for all available actions and modes
@@ -148,7 +151,7 @@ pip install bitwarden-pyro
 
 ### Wayland clipboard
 
-Clipboard interaction requires root access for wayland users, as outlined by ReimuNotMoe/ydotool:
+Clipboard interaction requires root access for wayland users, as outlined by [ReimuNotMoe/ydotool](https://github.com/ReimuNotMoe/ydotool):
 
 > This program requires access to /dev/uinput. This usually requires root permissions.
 
