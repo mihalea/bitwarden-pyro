@@ -4,6 +4,20 @@ interface:
   # Default window mode
   # Available options: uris, logins, names, folders
   window_mode: names
+autotype:
+  # Select and focus window before auto typing
+  select_window: false
+  # Slop arguments styling the selection
+  slop_args: -l -c 0.3,0.4,0.6,0.4 --nodecorations
+  # Time delay in seconds before starting the autotype procedure,
+  # allowing the window manager to refocus the window
+  start_delay: 1
+  # Time delay in seconds before and after the Tab key
+  # when auto typing both username and password
+  tab_delay: 0.2
+  # Show notification letting the user know the value of 
+  # autotype.start_delay, before starting the delay
+  delay_notification: false
 keyboard:
   # Keybind settings for all available actions and modes
   # - hint: Contents of the text parts of the help message

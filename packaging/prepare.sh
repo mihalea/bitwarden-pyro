@@ -6,7 +6,7 @@ set -e
 echo ""
 
 # Decrypt private key
-openssl aes-256-cbc -K $encrypted_e4b13d5114eb_key -iv $encrypted_e4b13d5114eb_iv -in package/private_key.enc -out /tmp/private_key -d
+openssl aes-256-cbc -K $encrypted_b11877025bac_key -iv $encrypted_b11877025bac_iv -in packaging/private_key.enc -out /tmp/private_key -d
 chmod 600 /tmp/private_key
 echo "Decrypted and permissioned the deployment key"
 
@@ -18,6 +18,17 @@ export PATH="$MAKEPKG_DIR:$PATH"
 export LIBRARY="$(pwd)/usr/share/makepkg"
 export MAKEPKG_CONF="$(pwd)/etc/makepkg.conf"
 echo "Installed makepkg"
+
+# Package version 
+LATEST_TAG=$(git describe --long | sed -rn 's/^(.*)-.*-.*$/\1/p')
+VERSION=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')
+
+export LATEST_TAG
+export VERSION
+
+echo "VERSION=${VERSION}"
+echo "LATEST_TAG=${LATEST_TAG}"
+echo "TRAVIS_TAG=${TRAVIS_TAG}"
 
 # Set up git to use the private key and skip host checking
 git config --global --add core.sshCommand "ssh -o StrictHostKeyChecking=false -i /tmp/private_key"

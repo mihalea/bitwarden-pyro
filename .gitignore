@@ -1,5 +1,7 @@
 .vscode
 *.log
 *.egg-info
-config
+/config
 packaging/bitwarden-pyro*
+dist
+build

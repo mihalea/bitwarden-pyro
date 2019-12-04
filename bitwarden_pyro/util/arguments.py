@@ -33,13 +33,19 @@ def parse_arguments():
 
     parser.add_argument(
         "-l", "--lock",
-        help="Lock vault and delete session key",
+        help="lock vault and delete session key",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        "-s", "--select-window",
+        help="select and focus window before auto typing",
         action="store_true"
     )
 
     parser.add_argument(
         "--hide-mesg",
-        help="Hide message explaining keybinds",
+        help="hide message explaining keybinds",
         action="store_true"
     )
 
@@ -51,30 +57,30 @@ def parse_arguments():
 
     parser.add_argument(
         "--no-config",
-        help="Ignore config files and use default values",
+        help="ignore config files and use default values",
         action="store_true"
     )
 
     parser.add_argument(
         "--dump-config",
-        help="Dump the contents of the config data to stdout",
+        help="dump the contents of the config data to stdout",
         action="store_true"
     )
 
     parser.add_argument(
         '--no-logging',
-        help="Disable logging to file",
+        help="disable logging to file",
         action="store_true"
     )
 
     parser.add_argument(
         "--config",
-        help="Use a custom config file path"
+        help="use a custom config file path"
     )
 
     parser.add_argument(
         '--cache',
-        help="Set the time in days it takes for cache to become invalid" +
+        help="set the time in days it takes for cache to become invalid" +
         f" (default: {ConfigLoader.get_default('security', 'cache')})"
     )
 
@@ -107,7 +113,7 @@ def parse_arguments():
 
     parser.add_argument(
         "-w", "--window-mode",
-        help="Set the initial window mode" +
+        help="set the initial window mode" +
         f" (default: {ConfigLoader.get_default('interface', 'window_mode')})",
         choices=['uris', 'logins', 'names', 'folders']
     )

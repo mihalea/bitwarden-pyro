@@ -11,14 +11,15 @@ Rofi-based graphical interface for the official BitWarden CLI
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase verbosity level
-  -l, --lock            Lock vault and delete session key
-  --hide-mesg           Hide message explaining keybinds
+  -l, --lock            lock vault and delete session key
+  -s, --select-window   select and focus window before auto typing
+  --hide-mesg           hide message explaining keybinds
   --version             show version information and exit
-  --no-config           Ignore config files and use default values
-  --dump-config         Dump the contents of the config data to stdout
-  --no-logging          Disable logging to file
-  --config CONFIG       Use a custom config file path
-  --cache CACHE         Set the time in days it takes for cache to become
+  --no-config           ignore config files and use default values
+  --dump-config         dump the contents of the config data to stdout
+  --no-logging          disable logging to file
+  --config CONFIG       use a custom config file path
+  --cache CACHE         set the time in days it takes for cache to become
                         invalid (default: 7)
   -c CLEAR, --clear CLEAR
                         clear the clipboard after CLEAR seconds (default: 5)
@@ -34,7 +35,7 @@ optional arguments:
                         passwd - auto type password
                         topt   - copy TOPT to clipboard
   -w {uris,logins,names,folders}, --window-mode {uris,logins,names,folders}
-                        Set the initial window mode (default: names)
+                        set the initial window mode (default: names)
 ```
 
 ### Security settings
@@ -62,7 +63,7 @@ $ bwpyro --timeout 0
 
 A local item cache can be used to prevent the whole item collection from being decrypted every time. Items are decrypted, stripped of passwords and TOTP data, and stored on disk in a file with permissions set to `0600`. The cache will the used to display items, and only after a selection is made, an individual item will be decrypted using `bw`. 
 
-An expiration interval can be set, which will force the application to sync the item data. By default it is set to 1 day.
+An expiration interval can be set, which will force the application to sync the item data. By default it is set to 7 days.
 
 The directory where the item cache is stored is `~/.cache/bwpyro/`.
 
@@ -99,11 +100,24 @@ Auto typing:
 
 The program expects the configuration file to be present in `~/.config/bwpyro/config`, unless otherwise specified. When no config file can be found in the expected path, a new one will be created using the default values.
 
+### Section: interface
+
 - `interface.hide_mesg`: Hide keybind help message. Expected values: true, false.
 - `interface.window_mode`: Default window mode. Expected values: Available options: uris, logins, names, folders.
+
+### Section: security
 - `security.cache`: Time in days after which the item cache is set to expire
 - `security.clear`: Time in seconds after which the clipboard will be cleared
 - `security.timeout`: Time in seconds after which the keyctl session data will be deleted
+
+### Section: autotype
+- `autotype.select_window`: Whether to show the window picker before the autotyping procedure
+- `autotype.slop_args`: Arguments used to launch slop as window picker used to style the selection
+- `autotype.start_delay`: Time delay in seconds before starting the autotype procedure, allowing the window manager to refocus the window
+- `autotype.tab_delay`: Time delay in seconds before and after the Tab key, when auto typing both username and password
+- `autotype.delay_notification`: Show notification letting the user know the value of autotype.start_delay, before starting the delay
+  
+### Section: keyboard
 - `keyboard.{action}`: Keybind settings for all available actions and modes
   - `.hint`: Contents of the text parts of the help message
   - `.key`: Keybind triggering the action
@@ -132,10 +146,12 @@ pip install bitwarden-pyro
 - **xclip**: Provide clipboard interaction with X11
 - **xset**: Alternative for clipoard interaction with X11
 - **wl-clipboard**: Provide clipboard interaction with Wayland
+- **slop**: Provide window selection for auto typing
+- **wmctrl**: Provide window focusing for auto typing
 
 ### Wayland clipboard
 
-Clipboard interaction requires root access for wayland users, as outlined by ReimuNotMoe/ydotool:
+Clipboard interaction requires root access for wayland users, as outlined by [ReimuNotMoe/ydotool](https://github.com/ReimuNotMoe/ydotool):
 
 > This program requires access to /dev/uinput. This usually requires root permissions.
 

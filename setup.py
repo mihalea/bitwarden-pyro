@@ -1,6 +1,9 @@
 import setuptools
 from bitwarden_pyro.settings import NAME, VERSION
 
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
+
 setuptools.setup(name='bitwarden_pyro',
                  version=VERSION,
                  description='Bitwarden python interface built with Rofi',
@@ -8,6 +11,8 @@ setuptools.setup(name='bitwarden_pyro',
                  author='Mircea Mihalea',
                  author_email='mircea@mihalea.ro',
                  license='MIT',
+                 long_description=long_description,
+                 long_description_content_type='text/markdown',
                  zip_safe=False,
                  include_package_data=True,
                  install_requires=['pyyaml'],

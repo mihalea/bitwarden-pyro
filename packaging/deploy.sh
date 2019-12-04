@@ -9,6 +9,12 @@ git clone ssh://aur@aur.archlinux.org/bitwarden-pyro-git.git aur
 # Update it
 cp PKGBUILD aur
 cd aur
+
+# Change pkgver to current version
+sed -i -r "s/^(pkgver)=(.*)$/\1=${VERSION}/g" PKGBUILD
+sed -i -r "s/^(source=.*#tag)=(.*)$/\1=${TRAVIS_TAG}\")/g" PKGBUILD
+
+# Create .SRCINFO
 /bin/bash "$MAKEPKG_DIR/makepkg" --config="${MAKEPKG_CONF}" --printsrcinfo > .SRCINFO
 
 # Commit

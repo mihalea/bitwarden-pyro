@@ -1,27 +1,29 @@
 # Maintainer Mircea Mihalea <mircea at mihalea dot ro>
 
 pkgname=bitwarden-pyro-git
-pkgver=r41.0642941
+pkgver=v1.1.0
 pkgrel=1
-pkgdesc="Provide a workspace overview for i3wm"
+pkgdesc="Bitwarden python interface built with Rofi"
 url="https://github.com/mihalea/bitwarden-pyro"
 depends=('python' 'python-yaml' 'keyutils' 'rofi' 'libnotify' 'bitwarden-cli')
 makedepends=('python-setuptools')
 optdepends=('xdotool: Provide auto typing for X11'
-						'ydotool-git: Provide auto typing for Wayland'
-						'xclip: Provide clipboard interaction with X11'
-						'xset: Alternative for clipoard interaction with X11'
-						'wl-clipboard: Provide clipboard interaction with Wayland')
+            'ydotool-git: Provide auto typing for Wayland'
+            'xclip: Provide clipboard interaction with X11'
+            'xorg-xset: Alternative for clipoard interaction with X11'
+            'wl-clipboard: Provide clipboard interaction with Wayland'
+            'slop: Provide window selection for auto typing'
+            'wmctrl: Provide window focusing for auto typing')
 license=('MIT')
 arch=('any')
 provides=('bwpyro')
 conflicts=('bwpyro')
-source=("git+https://github.com/mihalea/${pkgname%-git}.git#branch=master")
+source=("git+https://github.com/mihalea/${pkgname%-git}.git#tag=v1.1.0")
 md5sums=('SKIP')
 
 pkgver() {
-    cd "${srcdir}/${pkgname%-git}"
-    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+  cd "${pkgname%-git}"
+  git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 }
 
 build() {
