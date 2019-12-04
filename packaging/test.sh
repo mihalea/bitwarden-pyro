@@ -11,6 +11,9 @@ echo "version=${version}"
 git clone ssh://aur@aur.archlinux.org/bitwarden-pyro-git.git aur
 cd aur
 
+# Change pkgver to current version
+sed -ir "s/^(pkgver)=(.*)$/\1=${version}/g" PKGBUILD
+
 # Create SRC info
 /bin/bash "$MAKEPKG_DIR/makepkg" --config="${MAKEPKG_CONF}" --printsrcinfo > test_src
 
