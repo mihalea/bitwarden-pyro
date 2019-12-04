@@ -69,7 +69,10 @@ class ConfigLoader:
         },
         'autotype': {
             'select_window': False,
-            'slop_args': '-l -c 0.3,0.4,0.6,0.4 --nodecorations'
+            'slop_args': '-l -c 0.3,0.4,0.6,0.4 --nodecorations',
+            'start_delay': 1,
+            'tab_delay': 0.2,
+            'delay_notification': True
         },
         'interface': {
             'hide_mesg': False,
@@ -88,6 +91,7 @@ class ConfigLoader:
 
     def __init_converters(self):
         self.add_converter('int', int)
+        self.add_converter('float', float)
         self.add_converter('boolean', lambda t: str(t).lower() == "true")
         self.add_converter('windowaction', lambda a: WindowActions[a.upper()])
         self.add_converter('itemaction', lambda a: ItemActions[a.upper()])

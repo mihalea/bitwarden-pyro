@@ -269,7 +269,17 @@ class BwPyro:
                 self._logger.warning("Focus has been cancelled")
                 sys.exit(0)
         else:
-            sleep(1)
+            start_delay = self._config.get_int('autotype.start_delay')
+            focus_notification = self._config.get_boolean(
+                'autotype.delay_notification'
+            )
+
+            if focus_notification:
+                self._notify.send(
+                    message=f"Waiting {start_delay} second(s) for window to refocus",
+                    timeout=start_delay * 1000  # Convert to ms
+                )
+            sleep(start_delay)
 
     def __execute_action(self, action, item):
         if action == ItemActions.COPY:
@@ -291,20 +301,23 @@ class BwPyro:
             self._notify.send(
                 message="Auto typing username and password"
             )
+
+            tab_delay = self._config.get_float('autotype.tab_delay')
             self._autotype.string(item['login']['username'])
-            sleep(0.2)
+            sleep(tab_delay)
             self._autotype.key('Tab')
-            sleep(0.2)
+            sleep(tab_delay)
             self._autotype.string(item['login']['password'])
         elif action == ItemActions.PASSWORD:
             self._logger.info("Auto typing password")
             # Get item with password
             item = self._vault.get_item_full(item)
+
+            self.__delay_type()
+
             self._notify.send(
                 message="Auto typing password"
             )
-
-            self.__delay_type()
 
             self._autotype.string(item['login']['password'])
         elif action == ItemActions.TOTP:
