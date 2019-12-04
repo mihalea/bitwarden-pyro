@@ -1,0 +1,21 @@
+language: python
+stages:
+- name: check configuration
+  if: branch = travis
+- name: deploy
+  if: tag =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+jobs:
+  include:
+  - stage: check configuration
+    before_script: source ./packaging/prepare.sh
+    script: "./packaging/test.sh"
+  - stage: deploy
+    before_script: source ./packaging/prepare.sh
+    script: "./packaging/deploy.sh"
+deploy:
+  provider: pypi
+  user: "__token__"
+  on:
+    tags: true
+  password:
+    secure: IooY9qmVPsfrlG/69t1KnLjmHHqj7+1/vj1phk7V5DrMu8tHpfd89zwwSsSBxZxnKqqxJAdpgDT19EPqbldW/6kNTdYambAvBrLWSlu8B5+t1CND9uXgSLhaWO1TjA3eO0pPWPSp1Bx8giFRQsUA6/Js6lO4C2x6rSuZYVLqzUhMbVBBgCXdOsZQQqVoYRRFzP1J7pYq8bCOvjrHiGQ3/2SX0bplLq0EVAh1r9Qv2K9jx/IbOeOg8aHiJBIAGBVFv/WPIxL+lJRpGL5kfV5Qtfiwnz6MRg9k3OjPyEDAz+aYsJcrwGbe29vpbzx4bnxKJK8KUJQOnWy2lJTVUIJ6pYfsJQb4lZJeDkQHstrldEjp0F24vDXaIJ2wqyCUPWcIxO/qRREvb5X9wNwic3sn+qA7kUsGkmg8NHd4zzZukC6KkPJuigylH0UnGLqUX5O/NxO1/COHKEmfdRHrBUv8XECUS5ZKPWvTnSFuY4ukaMdNn1QowYEZcUux67AB/NQxpKgZVFvMMpZPxFZyTT7a41F2JJczbENlDrHHM0nXJ0obgAI2GetwihDJzRz4zl1EO401jO3b8yacpSdlSHBAtNfZ8pJoOKb+ZpbZnoVyAT3Gdi6owku6iv4/lJB/KtxDxm2C/yayssINpw2kYnaroyRTdn+B5EqWtofZReHnkYg=
