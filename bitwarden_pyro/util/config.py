@@ -124,6 +124,8 @@ class ConfigLoader:
 
         if args.select_window:
             self.set('autotype.select_window', args.select_window)
+        if args.hide_mesg:
+            self.set('interface.hide_mesg', args.hide_mesg)
 
     def __from_file(self, path):
         if path is None:
