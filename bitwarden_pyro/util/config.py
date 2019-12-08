@@ -172,9 +172,15 @@ class ConfigLoader:
 
     def __copy_config(self, path):
         try:
+            self._logger.debug("Copying default config")
+
             source = pkg_resources.resource_filename(
                 'bitwarden_pyro.resources', 'config'
             )
+
+            dirname = os.path.dirname(path)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
 
             copy(source, path)
         except IOError:
