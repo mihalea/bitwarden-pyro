@@ -14,17 +14,21 @@ class Rofi:
     def __init__(self, args, enter_event, hide_mesg):
         self._logger = ProjectLogger().get_logger()
         self._keybinds = {}
-        self._args = args[1:]
+        self._main_window_args = args.main_window_args + args.additional_args[1:]
+        self._password_window_args = args.password_window_args + args.additional_args[1:]
         self._enter_event = enter_event
         self._hide_mesg = hide_mesg
         self._keybinds_code = 10
 
-        if len(args) > 0:
-            self._logger.debug("Setting rofi arguments: %s", self._args)
+        if len(self._main_window_args) > 0:
+            self._logger.debug("Setting rofi arguments for main window: %s", self._main_window_args)
+        if len(self._password_window_args) > 0:
+            self._logger.debug("Setting rofi arguments for password window: %s",
+                                self._password_window_args)
 
-    def __extend_command(self, command):
-        if len(self._args) > 0:
-            command.extend(self._args)
+    def __extend_command(self, command, args):
+        if len(args) > 0:
+            command.extend(args)
 
         if not self._hide_mesg:
             mesg = []
@@ -68,8 +72,8 @@ class Rofi:
                 "-password", "-lines", "0"
             ]
 
-            if len(self._args) > 0:
-                cmd.extend(self._args)
+            if len(self._password_window_args) > 0:
+                cmd.extend(self._password_window_args)
 
             proc = sp.run(cmd, check=True, capture_output=True)
             return proc.stdout.decode("utf-8").strip()
@@ -84,8 +88,8 @@ class Rofi:
             self._logger.info("Showing Rofi error")
             cmd = ["rofi", "-e", f"ERROR! {message}"]
 
-            if len(self._args) > 0:
-                cmd.extend(self._args)
+            if len(self._main_window_args) > 0:
+                cmd.extend(self._main_window_args)
 
             sp.run(cmd, capture_output=True, check=True)
         except CalledProcessError:
@@ -99,7 +103,7 @@ class Rofi:
             echo_cmd = ["echo", items]
             rofi_cmd = self.__extend_command([
                 "rofi", "-dmenu", "-p", prompt, "-i", "-no-custom"
-            ])
+            ], self._main_window_args)
 
             echo_proc = sp.Popen(echo_cmd, stdout=sp.PIPE)
             rofi_proc = sp.run(

@@ -3,6 +3,8 @@ from time import sleep
 import re
 import sys
 import logging
+import shlex
+from collections import namedtuple
 
 from bitwarden_pyro.util.logger import ProjectLogger
 from bitwarden_pyro.util.arguments import parse_arguments
@@ -72,7 +74,7 @@ class BwPyro:
             self._session.lock()
         except SessionException:
             self._logger.exception("Failed to lock session")
-            self._rofi = Rofi(None, None, None)
+            self._rofi = Rofi([], None, None)
             self._rofi.show_error("Failed to lock and delete session")
 
     def __unlock(self, force=False):
@@ -197,8 +199,14 @@ class BwPyro:
         try:
             self._config = ConfigLoader(self._args)
             self._session = Session(
-                self._config.get_int('security.timeout'))
-            self._rofi = Rofi(self._args.rofi_args,
+            self._config.get_int('security.timeout'))
+
+            RofiArgs = namedtuple('RofiArgs',
+                                  'main_window_args password_window_args additional_args')
+            rofi_args = RofiArgs(shlex.split(self._args.main_window_rofi_args),
+                                 shlex.split(self._args.password_window_rofi_args),
+                                 self._args.rofi_args)
+            self._rofi = Rofi(rofi_args,
                               self._config.get_itemaction('keyboard.enter'),
                               self._config.get_boolean('interface.hide_mesg'))
             self._clipboard = Clipboard(

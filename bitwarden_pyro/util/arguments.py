@@ -119,9 +119,24 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--main-window-rofi-args",
+        help="rofi arguments used for the main window",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
+        "--password-window-rofi-args",
+        help="rofi arguments used for the password window",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
         'rofi_args',
         help=argparse.SUPPRESS,
-        nargs=argparse.REMAINDER
+        nargs=argparse.REMAINDER,
+        default=[]
     )
 
     return parser.parse_args()
