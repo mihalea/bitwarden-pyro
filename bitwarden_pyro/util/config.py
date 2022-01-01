@@ -160,7 +160,7 @@ class ConfigLoader:
         items = []
         for key, value in config.items():
             new_key = parent_key + sep + key if parent_key else key
-            if isinstance(value, collections.MutableMapping):
+            if isinstance(value, collections.abc.MutableMapping):
                 items.extend(
                     self.__flatten_config(
                         value, new_key, sep=sep

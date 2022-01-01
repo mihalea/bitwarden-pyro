@@ -4,7 +4,7 @@ from bitwarden_pyro.settings import NAME, VERSION
 with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
-setuptools.setup(name='bitwarden_pyro',
+setuptools.setup(name='bitwarden-pyro',
                  version=VERSION,
                  description='Bitwarden python interface built with Rofi',
                  url='https://github.com/mihalea/bitwarden-pyro',
